@@ -15,7 +15,7 @@ if (self.FIREBASE_CONFIG) {
   firebase.messaging();
 }
 
-const CACHE = "camara-v6";
+const CACHE = "camara-v7";
 const BASE = [
   "./", "index.html", "manifest.webmanifest",
   "css/base.css", "css/app.css",
@@ -40,7 +40,7 @@ self.addEventListener("fetch", (e) => {
   const url = new URL(e.request.url);
   if (e.request.method !== "GET" || url.origin !== location.origin || url.pathname.endsWith("/exec")) return;
   e.respondWith(
-    fetch(e.request)
+    fetch(e.request, { cache: "no-cache" }) // siempre pregunta si hay versión nueva
       .then((r) => {
         if (r.ok) { const copia = r.clone(); caches.open(CACHE).then((c) => c.put(e.request, copia)); }
         return r;
