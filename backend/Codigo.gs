@@ -33,11 +33,11 @@ const CAMARA = {
 
 const HOJA_INVITADOS = "Invitados";
 const HOJA_FOTOS = "Fotos";
-const COLUMNAS_INVITADOS = ["ID", "Nombre", "Apellido", "Token (hash)", "Registrado", "Estado"];
+const COLUMNAS_INVITADOS = ["ID", "Nombre", "Apellido", "Token (hash)", "Registrado", "Estado", "Avisos"];
 const COLUMNAS_FOTOS = ["ID", "ID invitado", "Invitado", "Comentario", "Estado", "Creada", "Actualizada", "Archivo", "Miniatura", "Bytes", "Reemplaza a", "ID cliente", "Ver foto"];
 
 // Índices (base 0) de las columnas que se leen y escriben
-const INV = { id: 0, nombre: 1, apellido: 2, hash: 3, registrado: 4, estado: 5 };
+const INV = { id: 0, nombre: 1, apellido: 2, hash: 3, registrado: 4, estado: 5, avisos: 6 };
 const FOTO = { id: 0, invitado: 1, nombreInvitado: 2, comentario: 3, estado: 4, creada: 5, actualizada: 6, archivo: 7, miniatura: 8, bytes: 9, reemplaza: 10, cliente: 11, ver: 12 };
 
 // Estados posibles de una foto:
@@ -110,7 +110,8 @@ const ACCIONES = {
   panel: accionPanel,
   panelMiniaturas: accionPanelMiniaturas,
   panelFoto: accionPanelFoto,
-  panelOcultar: accionPanelOcultar
+  panelOcultar: accionPanelOcultar,
+  avisos: accionAvisos
 };
 
 function doPost(e) {
@@ -378,6 +379,127 @@ function puedeVer(inv, fila, compartido) {
 }
 
 /* ============================================================
+   AVISOS AL CELULAR (Firebase Cloud Messaging)
+   El celular del invitado manda su "dirección de avisos" de Firebase;
+   se guarda en la hoja Invitados. Para enviar se usa la cuenta de
+   servicio de Firebase, que la pareja o Koba pegan una sola vez desde
+   el menú y queda en las Propiedades del script (nunca en el código).
+   ============================================================ */
+function accionAvisos(d) {
+  const inv = invitadoPorToken(d.token);
+  const fcm = String(d.fcmToken || "");
+  if (fcm && (fcm.length > 4096 || !/^[\w:.-]+$/.test(fcm))) fallar("datos_invalidos");
+  const hoja = hojaInvitados();
+  if (!hoja.getRange(1, INV.avisos + 1).getValue()) hoja.getRange(1, INV.avisos + 1).setValue("Avisos");
+  hoja.getRange(inv.fila, INV.avisos + 1).setValue(fcm);
+  // Dirección de la app para que el aviso abra la cámara de esta boda
+  if (/^https:\/\/[^\s]+$/.test(d.app || "") && String(d.app).length < 300) {
+    propiedades().setProperty("URL_APP", String(d.app));
+  }
+  return { activos: !!fcm };
+}
+
+function credencialesFirebase() {
+  const texto = propiedades().getProperty("FIREBASE_CUENTA");
+  if (!texto) return null;
+  try {
+    const c = JSON.parse(texto);
+    return c.client_email && c.private_key && c.project_id ? c : null;
+  } catch (e) { return null; }
+}
+
+// Token de acceso de Google para FCM (JWT firmado con la cuenta de servicio)
+function accesoFirebase(cred) {
+  const cache = CacheService.getScriptCache();
+  const guardado = cache.get("FCM_ACCESO");
+  if (guardado) return guardado;
+  const ahora = Math.floor(Date.now() / 1000);
+  const b64 = function (texto) { return Utilities.base64EncodeWebSafe(texto).replace(/=+$/, ""); };
+  const sinFirmar = b64(JSON.stringify({ alg: "RS256", typ: "JWT" })) + "." + b64(JSON.stringify({
+    iss: cred.client_email,
+    scope: "https://www.googleapis.com/auth/firebase.messaging",
+    aud: "https://oauth2.googleapis.com/token",
+    iat: ahora,
+    exp: ahora + 3600
+  }));
+  const firma = Utilities.base64EncodeWebSafe(Utilities.computeRsaSha256Signature(sinFirmar, cred.private_key)).replace(/=+$/, "");
+  const r = UrlFetchApp.fetch("https://oauth2.googleapis.com/token", {
+    method: "post",
+    payload: { grant_type: "urn:ietf:params:oauth:grant-type:jwt-bearer", assertion: sinFirmar + "." + firma },
+    muteHttpExceptions: true
+  });
+  if (r.getResponseCode() !== 200) throw new Error("Firebase no aceptó la llave: " + r.getContentText());
+  const acceso = JSON.parse(r.getContentText()).access_token;
+  cache.put("FCM_ACCESO", acceso, 3000);
+  return acceso;
+}
+
+/**
+ * Manda un aviso a todos los invitados que los activaron. Las direcciones
+ * que Firebase da por vencidas se borran de la planilla.
+ */
+function enviarAvisos(titulo, cuerpo) {
+  const cred = credencialesFirebase();
+  if (!cred) return { enviados: 0, total: 0, sinConfigurar: true };
+  const hoja = hojaInvitados();
+  const valores = hoja.getDataRange().getValues();
+  const destinos = [];
+  for (let i = 1; i < valores.length; i++) {
+    if (valores[i][INV.avisos] && valores[i][INV.estado] === "activo") destinos.push({ fila: i + 1, fcm: valores[i][INV.avisos] });
+  }
+  if (!destinos.length) return { enviados: 0, total: 0 };
+
+  const acceso = accesoFirebase(cred);
+  const url = "https://fcm.googleapis.com/v1/projects/" + cred.project_id + "/messages:send";
+  const app = propiedades().getProperty("URL_APP") || "";
+  const icono = app ? app.replace(/[?#].*$/, "").replace(/[^/]*$/, "") + "assets/icono-192.png" : "";
+  let enviados = 0, vencidos = 0;
+  for (let i = 0; i < destinos.length; i += 50) {
+    const tanda = destinos.slice(i, i + 50);
+    const respuestas = UrlFetchApp.fetchAll(tanda.map(function (d) {
+      const webpush = { notification: { title: titulo, body: cuerpo } };
+      if (icono) webpush.notification.icon = icono;
+      if (app) webpush.fcm_options = { link: app };
+      return {
+        url: url,
+        method: "post",
+        contentType: "application/json",
+        headers: { Authorization: "Bearer " + acceso },
+        muteHttpExceptions: true,
+        payload: JSON.stringify({ message: { token: d.fcm, notification: { title: titulo, body: cuerpo }, webpush: webpush } })
+      };
+    }));
+    respuestas.forEach(function (r, k) {
+      const codigo = r.getResponseCode();
+      if (codigo === 200) enviados++;
+      else if (codigo === 404 || /UNREGISTERED|registration-token-not-registered/.test(r.getContentText())) {
+        hoja.getRange(tanda[k].fila, INV.avisos + 1).setValue("");
+        vencidos++;
+      } else {
+        console.error("FCM respondió " + codigo + ": " + r.getContentText());
+      }
+    });
+  }
+  return { enviados: enviados, total: destinos.length, vencidos: vencidos };
+}
+
+// Lo dispara el reloj del script a la hora del revelado (ver programarAvisoRevelado)
+function avisarRevelado() {
+  const r = propiedades().getProperty("REVELADO_EN");
+  if (!r) return null;
+  if (!revelado()) { programarAvisoRevelado(new Date(new Date(r).getTime() + 60000)); return null; } // se adelantó
+  const nombre = propiedades().getProperty("NOMBRE_BODA") || "la boda";
+  return enviarAvisos("¡Se revelaron las fotos!", "Ya podés ver las fotos que sacaste en " + nombre + ".");
+}
+
+function programarAvisoRevelado(fecha) {
+  ScriptApp.getProjectTriggers()
+    .filter(function (t) { return t.getHandlerFunction() === "avisarRevelado"; })
+    .forEach(function (t) { ScriptApp.deleteTrigger(t); });
+  if (fecha && fecha.getTime() > Date.now()) ScriptApp.newTrigger("avisarRevelado").timeBased().at(fecha).create();
+}
+
+/* ============================================================
    PANEL DE LA PAREJA
    Protegido por una clave larga y aleatoria que se genera al
    configurar (menú Cámara descartable → Ver enlace del panel).
@@ -452,6 +574,9 @@ function onOpen() {
     .addItem("Abrir la cámara", "abrirCamara")
     .addItem("Cerrar la cámara", "cerrarCamara")
     .addSeparator()
+    .addItem("Mandar un aviso a los invitados", "mandarAviso")
+    .addItem("Configurar avisos (Firebase)", "configurarAvisos")
+    .addSeparator()
     .addItem("Ver resumen", "verResumen")
     .addItem("Generar nueva clave del panel", "nuevaClavePanel")
     .addToUi();
@@ -502,6 +627,7 @@ function configurar() {
     CAMARA_ABIERTA: "si",
     REVELADO_EN: revelaEn ? revelaEn.toISOString() : ""
   });
+  if (revelaEn) programarAvisoRevelado(revelaEn);
 
   ui.alert("¡Listo!",
     "Las fotos se guardan en la carpeta \"" + raiz.getName() + "\" de tu Drive.\n\n" +
@@ -522,14 +648,21 @@ function programarRevelado() {
   const fecha = leerFechaHora(r.getResponseText());
   if (!fecha) { ui.alert("No entendí la fecha. Usá el formato 15/03/2027 12:00."); return; }
   propiedades().setProperty("REVELADO_EN", fecha.toISOString());
-  ui.alert("Las fotos se revelan el " + formatoFecha(fecha) + ".");
+  programarAvisoRevelado(fecha);
+  ui.alert("Las fotos se revelan el " + formatoFecha(fecha) + ".\nA esa hora les llega un aviso a los invitados que los activaron.");
 }
 
 function revelarAhora() {
   const ui = SpreadsheetApp.getUi();
   if (ui.alert("Revelar ahora", "Los invitados van a poder ver sus fotos desde este momento. ¿Seguimos?", ui.ButtonSet.YES_NO) !== ui.Button.YES) return;
   propiedades().setProperty("REVELADO_EN", new Date().toISOString());
-  ui.alert("¡Listo! Las fotos ya están reveladas.");
+  programarAvisoRevelado(null);
+  let detalle = "";
+  try {
+    const r = avisarRevelado();
+    if (r && r.total) detalle = "\nAvisos enviados: " + r.enviados + " de " + r.total + ".";
+  } catch (e) { detalle = "\nNo se pudieron mandar los avisos: " + e.message; }
+  ui.alert("¡Listo! Las fotos ya están reveladas." + detalle);
 }
 
 function compartirAlbum() { cambiarPropiedad("ESTADO_ALBUM", "compartido", "El álbum ahora está COMPARTIDO: los invitados registrados pueden ver todas las fotos."); }
@@ -549,6 +682,46 @@ function nuevaClavePanel() {
   const clave = nuevoToken();
   propiedades().setProperty("CLAVE_PANEL_HASH", hashTexto(clave));
   ui.alert("Nueva clave del panel (guardala):\n" + clave);
+}
+
+function configurarAvisos() {
+  const ui = SpreadsheetApp.getUi();
+  const r = ui.prompt("Avisos con Firebase",
+    "Abrí con el Bloc de notas el archivo .json de la cuenta de servicio de Firebase, copiá TODO el contenido y pegalo acá:",
+    ui.ButtonSet.OK_CANCEL);
+  if (r.getSelectedButton() !== ui.Button.OK) return;
+  let cred;
+  try { cred = JSON.parse(r.getResponseText()); } catch (e) { cred = null; }
+  if (!cred || !cred.client_email || !cred.private_key || !cred.project_id) {
+    ui.alert("Eso no parece el archivo de la cuenta de servicio. Tiene que empezar con { y tener \"private_key\".");
+    return;
+  }
+  propiedades().setProperty("FIREBASE_CUENTA", JSON.stringify(cred));
+  CacheService.getScriptCache().remove("FCM_ACCESO");
+  try {
+    accesoFirebase(cred);
+    ui.alert("¡Avisos configurados! Proyecto de Firebase: " + cred.project_id + ".");
+  } catch (e) {
+    ui.alert("Se guardó, pero Firebase no aceptó la llave:\n" + e.message);
+  }
+}
+
+function mandarAviso() {
+  const ui = SpreadsheetApp.getUi();
+  const nombre = propiedades().getProperty("NOMBRE_BODA") || "Nuestra boda";
+  const r = ui.prompt("Mandar un aviso",
+    "Le llega a los invitados que activaron los avisos. Ej.: ¡Ya empieza el vals, no te olvides de tu cámara!",
+    ui.ButtonSet.OK_CANCEL);
+  if (r.getSelectedButton() !== ui.Button.OK) return;
+  const texto = textoLimpio(r.getResponseText(), 180);
+  if (!texto) return;
+  try {
+    const res = enviarAvisos(nombre, texto);
+    if (res.sinConfigurar) ui.alert("Primero configurá los avisos (menú Cámara descartable → Configurar avisos).");
+    else ui.alert("Aviso enviado a " + res.enviados + " de " + res.total + " celulares.");
+  } catch (e) {
+    ui.alert("No se pudo mandar: " + e.message);
+  }
 }
 
 function verResumen() {
@@ -694,7 +867,7 @@ function invitadoPorToken(token) {
     const v = valores[i];
     if (v[INV.hash] === hash) {
       if (v[INV.estado] !== "activo") fallar("sesion_invalida");
-      return { id: v[INV.id], nombre: v[INV.nombre], apellido: v[INV.apellido] };
+      return { id: v[INV.id], nombre: v[INV.nombre], apellido: v[INV.apellido], fila: i + 1 };
     }
   }
   fallar("sesion_invalida");

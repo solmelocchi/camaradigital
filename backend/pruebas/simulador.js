@@ -30,6 +30,8 @@ function crearEntorno(respuestas) {
       getDataRange: () => ({ getValues: () => filas.map((f) => f.slice()) }),
       getRange: (r, c, nr, nc) => ({
         setFontWeight: () => {},
+        getValue: () => (filas[r - 1] || [])[c - 1] || "",
+        setValue: (v) => { filas[r - 1] = filas[r - 1] || []; filas[r - 1][c - 1] = guardarValor(v); },
         setValues: (vals) => {
           vals.forEach((fila, i) => {
             filas[r - 1 + i] = filas[r - 1 + i] || [];
@@ -79,6 +81,20 @@ function crearEntorno(respuestas) {
     return carpeta;
   }
 
+  // Internet de Google (UrlFetchApp): se registra cada pedido y se responde
+  // con estado.respuestaFcm(pedido) → { codigo, texto }
+  estado.pedidos = [];
+  estado.cache = {};
+  estado.disparadores = [];
+  estado.respuestaFcm = () => ({ codigo: 200, texto: "{}" });
+  const respuesta = (r) => ({ getResponseCode: () => r.codigo, getContentText: () => r.texto });
+  const pedir = (url, op) => {
+    const pedido = Object.assign({ url }, op);
+    estado.pedidos.push(pedido);
+    if (url.includes("oauth2.googleapis.com")) return respuesta({ codigo: 200, texto: JSON.stringify({ access_token: "acceso-123" }) });
+    return respuesta(estado.respuestaFcm(pedido));
+  };
+
   const firmados = (buf) => Array.from(buf).map((b) => (b > 127 ? b - 256 : b));
 
   const contexto = {
@@ -98,7 +114,22 @@ function crearEntorno(respuestas) {
       base64Decode: (s) => { if (/[^A-Za-z0-9+/=]/.test(s)) throw new Error("base64 inválido"); return firmados(Buffer.from(s, "base64")); },
       base64Encode: (bytes) => Buffer.from(bytes.map((b) => b & 0xff)).toString("base64"),
       newBlob: (bytes, mime, name) => ({ bytes, mime, name }),
-      formatDate: (d) => d.toISOString().slice(0, 19).replace(/[:T]/g, "-")
+      formatDate: (d) => d.toISOString().slice(0, 19).replace(/[:T]/g, "-"),
+      base64EncodeWebSafe: (t) => Buffer.from(typeof t === "string" ? t : t.map((b) => b & 0xff)).toString("base64").replace(/\+/g, "-").replace(/\//g, "_"),
+      computeRsaSha256Signature: (texto, clave) => { if (!String(clave).includes("PRIVATE KEY")) throw new Error("clave inválida"); return [1, 2, 3, 4]; }
+    },
+    UrlFetchApp: { fetch: pedir, fetchAll: (lista) => lista.map((p) => pedir(p.url, p)) },
+    CacheService: {
+      getScriptCache: () => ({
+        get: (k) => estado.cache[k] || null,
+        put: (k, v) => { estado.cache[k] = v; },
+        remove: (k) => { delete estado.cache[k]; }
+      })
+    },
+    ScriptApp: {
+      getProjectTriggers: () => estado.disparadores.slice(),
+      deleteTrigger: (t) => { estado.disparadores = estado.disparadores.filter((x) => x !== t); },
+      newTrigger: (fn) => ({ timeBased: () => ({ at: (fecha) => ({ create: () => { const t = { fn, fecha, getHandlerFunction: () => fn }; estado.disparadores.push(t); return t; } }) }) })
     },
     Session: { getScriptTimeZone: () => "America/Argentina/Mendoza" },
     LockService: {

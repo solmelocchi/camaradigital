@@ -93,3 +93,33 @@ Hasta la hora del revelado los invitados solo ven el contador y sus fotos
 como negativos "en revelado": no pueden verlas (ni pidiéndoselas directo al
 servidor), solo pueden borrar la última que sacaron y no pueden
 reemplazarlas. La pareja sí ve todo desde Drive y desde su panel.
+
+## 7. Avisos al celular (Firebase)
+
+Los avisos ("¡Se revelaron las fotos!" y los mensajes que mande la pareja
+durante la fiesta) salen del proyecto de Firebase de Koba Digital, que es uno
+solo para todas las bodas.
+
+**Una sola vez (Koba):** crear el proyecto en
+[console.firebase.google.com](https://console.firebase.google.com), registrar
+una app web y generar los certificados push web. Esos datos (públicos) van
+en `js/firebase-config.js`.
+
+**En cada boda:** en la planilla, **Cámara descartable → Configurar avisos
+(Firebase)** y pegar el contenido completo del archivo `.json` de la cuenta
+de servicio de Firebase (Configuración del proyecto → Cuentas de servicio →
+Generar nueva clave privada). Ese archivo es secreto: queda guardado solo en
+el script de la boda, nunca en el repositorio.
+
+Después de pegar el código nuevo del script, hay que volver a implementar:
+**Implementar → Gestionar implementaciones → Editar → Nueva versión**. Google
+va a pedir permisos nuevos (conectarse a internet y programar el aviso).
+
+| Desde el menú | Qué hace |
+|---|---|
+| Programar el revelado | Además de la hora, deja programado el aviso automático |
+| Revelar las fotos ahora | Revela y avisa en el momento |
+| Mandar un aviso a los invitados | Un mensaje libre, ej. "¡Ya empieza el vals, no te olvides de tu cámara!" |
+
+En iPhone los avisos llegan solo si el invitado instaló la app en la
+pantalla de inicio (iOS 16.4 o más nuevo); la app lo guía para hacerlo.

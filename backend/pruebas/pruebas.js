@@ -363,6 +363,100 @@ prueba("configurar con el link de una carpeta existente guarda las fotos ahí", 
   assert.strictEqual(otro.estado.props.CARPETA_FOTOS_ID, undefined);
 });
 
+const CUENTA = { type: "service_account", project_id: "camara-koba", client_email: "envios@camara-koba.iam.gserviceaccount.com", private_key: "-----BEGIN PRIVATE KEY-----\nabc\n-----END PRIVATE KEY-----\n" };
+const TOKEN_FCM = "fcm-token_ABC:123-xyz";
+
+prueba("avisos: el invitado guarda su dirección de avisos y se valida", () => {
+  const { api, estado } = crearEntorno();
+  const ana = registrar(api);
+  assert.strictEqual(api({ accion: "avisos", token: "falso".repeat(10), fcmToken: TOKEN_FCM }).error, "sesion_invalida");
+  assert.strictEqual(api({ accion: "avisos", token: ana, fcmToken: "<script>" }).error, "datos_invalidos");
+  const r = api({ accion: "avisos", token: ana, fcmToken: TOKEN_FCM, app: "https://solmelocchi.github.io/camaradigital/?b=emiliaytomas" });
+  assert.strictEqual(r.activos, true);
+  assert.strictEqual(estado.hojas.Invitados.filas[1][6], TOKEN_FCM);
+  assert.strictEqual(estado.hojas.Invitados.filas[0][6], "Avisos");
+  assert.strictEqual(estado.props.URL_APP, "https://solmelocchi.github.io/camaradigital/?b=emiliaytomas");
+  api({ accion: "avisos", token: ana, fcmToken: "", app: "javascript:alert(1)" });
+  assert.strictEqual(estado.hojas.Invitados.filas[1][6], "", "se pueden desactivar");
+  assert.strictEqual(estado.props.URL_APP, "https://solmelocchi.github.io/camaradigital/?b=emiliaytomas", "solo acepta https");
+});
+
+prueba("avisos: sin Firebase configurado no se manda nada", () => {
+  const { api, contexto, estado } = crearEntorno();
+  api({ accion: "avisos", token: registrar(api), fcmToken: TOKEN_FCM });
+  assert.strictEqual(contexto.enviarAvisos("Hola", "chau").sinConfigurar, true);
+  assert.strictEqual(estado.pedidos.length, 0);
+});
+
+prueba("avisos: se mandan a FCM con la cuenta de servicio, link e ícono de la boda", () => {
+  const { api, contexto, estado } = crearEntorno();
+  estado.props.FIREBASE_CUENTA = JSON.stringify(CUENTA);
+  api({ accion: "avisos", token: registrar(api, "Ana", "Gómez"), fcmToken: TOKEN_FCM, app: "https://solmelocchi.github.io/camaradigital/?b=emiliaytomas" });
+  api({ accion: "avisos", token: registrar(api, "Luis", "Pérez"), fcmToken: "otro-token" });
+  registrar(api, "Sin", "Avisos");
+  const r = contexto.enviarAvisos("¡Se revelaron!", "Mirá tus fotos");
+  assert.deepStrictEqual([r.enviados, r.total], [2, 2]);
+  const fcm = estado.pedidos.filter((p) => p.url.includes("fcm.googleapis.com"));
+  assert.strictEqual(fcm[0].url, "https://fcm.googleapis.com/v1/projects/camara-koba/messages:send");
+  assert.strictEqual(fcm[0].headers.Authorization, "Bearer acceso-123");
+  const msg = JSON.parse(fcm[0].payload).message;
+  assert.strictEqual(msg.token, TOKEN_FCM);
+  assert.strictEqual(msg.notification.title, "¡Se revelaron!");
+  assert.strictEqual(msg.webpush.fcm_options.link, "https://solmelocchi.github.io/camaradigital/?b=emiliaytomas");
+  assert.strictEqual(msg.webpush.notification.icon, "https://solmelocchi.github.io/camaradigital/assets/icono-192.png");
+  // El token de acceso se reutiliza (no se firma uno nuevo en cada envío)
+  contexto.enviarAvisos("Otro", "aviso");
+  assert.strictEqual(estado.pedidos.filter((p) => p.url.includes("oauth2")).length, 1);
+});
+
+prueba("avisos: las direcciones vencidas se borran de la planilla", () => {
+  const { api, contexto, estado } = crearEntorno();
+  estado.props.FIREBASE_CUENTA = JSON.stringify(CUENTA);
+  api({ accion: "avisos", token: registrar(api), fcmToken: TOKEN_FCM });
+  estado.respuestaFcm = () => ({ codigo: 404, texto: '{"error":{"status":"NOT_FOUND","details":[{"errorCode":"UNREGISTERED"}]}}' });
+  const r = contexto.enviarAvisos("Hola", "chau");
+  assert.deepStrictEqual([r.enviados, r.vencidos], [0, 1]);
+  assert.strictEqual(estado.hojas.Invitados.filas[1][6], "");
+});
+
+prueba("revelado: se programa el aviso automático y revelar ahora avisa al instante", () => {
+  const { api, contexto, estado } = crearEntorno(["Emilia & Tomás", "", "15/03/2030 12:00"]);
+  assert.strictEqual(estado.disparadores.length, 1);
+  assert.strictEqual(estado.disparadores[0].fn, "avisarRevelado");
+  estado.respuestasPrompt = ["16/03/2030 10:00"];
+  contexto.programarRevelado();
+  assert.strictEqual(estado.disparadores.length, 1, "reemplaza el anterior");
+  assert.strictEqual(estado.disparadores[0].fecha.getDate(), 16);
+
+  estado.props.FIREBASE_CUENTA = JSON.stringify(CUENTA);
+  api({ accion: "avisos", token: registrar(api), fcmToken: TOKEN_FCM });
+  contexto.revelarAhora();
+  assert.strictEqual(estado.disparadores.length, 0);
+  const aviso = estado.pedidos.find((p) => p.url.includes("fcm.googleapis.com"));
+  assert.ok(aviso, "mandó el aviso");
+  assert.match(JSON.parse(aviso.payload).message.notification.body, /Emilia & Tomás/);
+});
+
+prueba("revelado: si el reloj del script se adelanta, reprograma el aviso y no avisa todavía", () => {
+  const { contexto, estado } = crearEntorno();
+  estado.props.FIREBASE_CUENTA = JSON.stringify(CUENTA);
+  estado.props.REVELADO_EN = new Date(Date.now() + 30000).toISOString();
+  assert.strictEqual(contexto.avisarRevelado(), null);
+  assert.strictEqual(estado.disparadores.length, 1);
+  assert.strictEqual(estado.pedidos.length, 0);
+});
+
+prueba("configurar avisos: rechaza lo que no es una cuenta de servicio", () => {
+  const { contexto, estado } = crearEntorno();
+  estado.respuestasPrompt = ["hola"];
+  contexto.configurarAvisos();
+  assert.strictEqual(estado.props.FIREBASE_CUENTA, undefined);
+  estado.respuestasPrompt = [JSON.stringify(CUENTA)];
+  contexto.configurarAvisos();
+  assert.strictEqual(JSON.parse(estado.props.FIREBASE_CUENTA).project_id, "camara-koba");
+  assert.match(estado.alertas[estado.alertas.length - 1], /camara-koba/);
+});
+
 /* ------------------------------------------------------------ */
 let fallidas = 0;
 pruebas.forEach(({ nombre, fn }) => {

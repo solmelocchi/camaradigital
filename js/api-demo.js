@@ -103,6 +103,10 @@
         if (!revelado(inv)) throw error("en_revelado", "Las fotos todavía se están revelando.");
         return { id: f.id, datos: completas[f.id] || f.mini.split(",")[1] };
       },
+      avisos(db, d) {
+        invitado(db, d.token);
+        return { activos: !!d.fcmToken };
+      },
       album(db, d) {
         const inv = invitado(db, d.token);
         if (!revelado(inv)) throw error("en_revelado", "Las fotos todavía se están revelando.");

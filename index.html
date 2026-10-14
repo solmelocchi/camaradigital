@@ -104,6 +104,15 @@
       <label class="link" for="input-galeria" id="btn-galeria">o subí una foto de tu galería</label>
       <input type="file" id="input-galeria" accept="image/*" class="archivo-oculto">
       <input type="file" id="input-camara-nativa" accept="image/*" capture="environment" class="archivo-oculto">
+
+      <div class="tarjeta-avisos" id="tarjeta-avisos" hidden>
+        <span class="tarjeta-avisos-icono"><svg><use href="#i-campana"/></svg></span>
+        <div class="tarjeta-avisos-texto">
+          <p class="tarjeta-avisos-titulo" id="ta-titulo">¿Te avisamos cuando se revelen?</p>
+          <p class="tarjeta-avisos-sub" id="ta-texto">Te llega una notificación al celular.</p>
+        </div>
+        <button class="btn btn-outline btn-chico" type="button" id="ta-boton">Avisarme</button>
+      </div>
     </section>
 
     <!-- Pestaña: Mi rollo -->
@@ -274,7 +283,7 @@
       <li>Elegí <svg class="paso-icono"><use href="#i-mas"/></svg> <strong>Agregar a inicio</strong>.</li>
       <li>Abrí la cámara desde el ícono nuevo: ya entra con tu nombre.</li>
     </ol>
-    <p class="lista-texto">Así te podemos avisar cuando se revelen las fotos.</p>
+    <p class="lista-texto">Así te podemos avisar cuando se revelen las fotos. Después abrí la cámara desde el ícono y activá los avisos.</p>
     <button class="btn btn-primary btn-block" type="button" data-cerrar>Entendido</button>
   </div>
 </div>
@@ -282,6 +291,8 @@
 <div class="toast" id="toast" role="status" aria-live="polite"></div>
 
 <script src="js/boda.js"></script>
+<script src="js/firebase-config.js" defer></script>
+<script src="js/avisos.js" defer></script>
 <script src="js/api.js" defer></script>
 <script src="js/api-demo.js" defer></script>
 <script src="js/imagenes.js" defer></script>

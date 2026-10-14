@@ -175,6 +175,7 @@
     $("#perfil-nombre").textContent = `${r.invitado.nombre} ${r.invitado.apellido}`;
     $("#enlace-whatsapp").href = "https://wa.me/?text=" + encodeURIComponent(`Mi enlace personal para la cámara de la boda de ${pareja()}: ${enlacePersonal()}`);
     render();
+    renderAvisos();
     if (E.revelado) cargarMiniaturas();
   }
 
@@ -183,6 +184,88 @@
     $("#tabbar").hidden = false;
     mostrarPantalla("p-camara");
     $("#btn-instalar").hidden = instalada() || !(E.instalar || esIOS);
+    renovarAvisos();
+  }
+
+  /* ---------------------------------------------------------
+     Avisos al celular
+  --------------------------------------------------------- */
+  const claveAvisos = () => `koba-camara:avisos:${E.slug}:${E.url}`;
+  const avisosGuardados = () => { try { return localStorage.getItem(claveAvisos()); } catch (e) { return null; } };
+
+  function estadoAvisos() {
+    if (!E.url) return "demo";
+    if (!Avisos.configurado()) return "sin-configurar";
+    if (esIOS && !instalada()) return "instalar";
+    if (!Avisos.soportado()) return "no-soportado";
+    if (Avisos.permiso === "denied") return "bloqueados";
+    if (Avisos.permiso === "granted" && avisosGuardados()) return "activos";
+    return "pendiente";
+  }
+
+  const TEXTOS_AVISOS = {
+    "demo": "No están en la demostración",
+    "sin-configurar": "Muy pronto",
+    "instalar": "Instalá la app para recibirlos",
+    "no-soportado": "Este navegador no los permite",
+    "bloqueados": "Bloqueados: activalos en la configuración del celular",
+    "activos": "Activados: te avisamos cuando se revelen",
+    "pendiente": "Tocá para activarlos"
+  };
+
+  function renderAvisos() {
+    const est = estadoAvisos();
+    $("#avisos-estado").textContent = TEXTOS_AVISOS[est];
+    const tarjeta = $("#tarjeta-avisos");
+    tarjeta.hidden = E.revelado || !(est === "pendiente" || est === "instalar");
+    if (est === "instalar") {
+      $("#ta-titulo").textContent = "Instalá la app y te avisamos";
+      $("#ta-texto").textContent = "En iPhone los avisos llegan a la app instalada.";
+      $("#ta-boton").textContent = "Instalar";
+    } else {
+      $("#ta-titulo").textContent = "¿Te avisamos cuando se revelen?";
+      $("#ta-texto").textContent = "Te llega una notificación al celular.";
+      $("#ta-boton").textContent = "Avisarme";
+    }
+  }
+
+  async function enviarDireccionAvisos(fcm) {
+    await E.api.llamar("avisos", { token: E.token, fcmToken: fcm, app: `${location.origin}${location.pathname}?b=${E.slug}` }, 3);
+    try { localStorage.setItem(claveAvisos(), fcm); } catch (e) { /* nada */ }
+  }
+
+  async function activarAvisos() {
+    const est = estadoAvisos();
+    if (est === "instalar") { instalar(); return; }
+    if (est !== "pendiente") { aviso(TEXTOS_AVISOS[est] + "."); return; }
+    try {
+      const fcm = await Avisos.activar(); // pide el permiso dentro del toque
+      await enviarDireccionAvisos(fcm);
+      aviso("¡Listo! Te avisamos cuando se revelen.");
+    } catch (e) {
+      if (e.codigo === "bloqueados") aviso("Los avisos están bloqueados. Activalos en la configuración del celular.", true);
+      else if (e.codigo !== "sin_permiso" && !sesionCaida(e)) aviso("No pudimos activar los avisos. Probá de nuevo.", true);
+    }
+    renderAvisos();
+  }
+
+  // Si el celular ya dio permiso, se confirma la dirección (Firebase a veces la cambia)
+  let escuchandoAvisos = false;
+  async function renovarAvisos() {
+    if (!E.url || !Avisos.soportado() || Avisos.permiso !== "granted") return;
+    try {
+      const fcm = await Avisos.token();
+      if (fcm && fcm !== avisosGuardados()) await enviarDireccionAvisos(fcm);
+      if (!escuchandoAvisos) {
+        escuchandoAvisos = true;
+        Avisos.alRecibir((p) => {
+          const n = (p && p.notification) || {};
+          aviso([n.title, n.body].filter(Boolean).join(" · ") || "Tenés un aviso nuevo.");
+          if (E.token) E.api.llamar("sesion", { token: E.token }, 2).then(aplicarSesion).catch(() => {});
+        });
+      }
+    } catch (e) { /* sin avisos no se rompe nada */ }
+    renderAvisos();
   }
 
   /* ---------------------------------------------------------
@@ -965,7 +1048,8 @@
 
     $("#enlace-copiar").addEventListener("click", copiarEnlace);
     $("#btn-instalar").addEventListener("click", instalar);
-    $("#btn-avisos").addEventListener("click", () => aviso("Los avisos al celular llegan en la próxima versión."));
+    $("#btn-avisos").addEventListener("click", activarAvisos);
+    $("#ta-boton").addEventListener("click", activarAvisos);
     $("#sw-sonido").checked = Sonidos.activo;
     $("#sw-sonido").addEventListener("change", (e) => { Sonidos.activo = e.target.checked; });
     $("#btn-salir").addEventListener("click", pedirSalir);
