@@ -15,7 +15,7 @@ if (self.FIREBASE_CONFIG) {
   firebase.messaging();
 }
 
-const CACHE = "camara-v3";
+const CACHE = "camara-v4";
 const BASE = [
   "./", "index.html", "manifest.webmanifest",
   "css/base.css", "css/app.css",
