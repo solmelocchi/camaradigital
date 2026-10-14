@@ -4,7 +4,7 @@
  * ve enseguida) y usa la copia guardada solo si no hay conexión.
  * Nunca guarda las respuestas del servidor de fotos.
  */
-const CACHE = "camara-v1";
+const CACHE = "camara-v2";
 const BASE = [
   "./", "index.html", "manifest.webmanifest",
   "css/base.css", "css/app.css",

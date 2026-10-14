@@ -2,7 +2,7 @@
 <html lang="es">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
 <title>Cámara descartable</title>
 <meta name="robots" content="noindex">
 <meta name="theme-color" content="#FAF3EA">
@@ -38,6 +38,8 @@
   <symbol id="i-mensaje" viewBox="0 0 24 24"><path d="M4 5h16v11H9l-5 4z"/></symbol>
   <symbol id="i-campana" viewBox="0 0 24 24"><path d="M6 16V11a6 6 0 0 1 12 0v5l1.5 2h-15z"/><path d="M10 20.5a2 2 0 0 0 4 0"/></symbol>
   <symbol id="i-compartir" viewBox="0 0 24 24"><path d="M12 15V3M8 7l4-4 4 4"/><path d="M5 11v9h14v-9"/></symbol>
+  <symbol id="i-papelera" viewBox="0 0 24 24"><path d="M4 7h16M9 7V4.5h6V7M6.5 7l1 13h9l1-13M10 11v5.5M14 11v5.5"/></symbol>
+  <symbol id="i-cambiar" viewBox="0 0 24 24"><path d="M4 9h13l-3.5-3.5M20 15H7l3.5 3.5"/></symbol>
   <symbol id="i-mas" viewBox="0 0 24 24"><rect x="4" y="4" width="16" height="16" rx="3"/><path d="M12 8.5v7M8.5 12h7"/></symbol>
 </svg>
 
@@ -171,6 +173,25 @@
   <button class="visor-chip" type="button" id="visor-chip" hidden><svg><use href="#i-mensaje"/></svg><span id="visor-chip-texto"></span></button>
 </div>
 
+<!-- ===================== CARRUSEL (fotos a pantalla completa) ===================== -->
+<div class="carrusel" id="carrusel" hidden role="dialog" aria-modal="true" aria-labelledby="car-titulo">
+  <div class="carrusel-arriba">
+    <button class="visor-btn" type="button" id="car-cerrar" aria-label="Cerrar"><svg><use href="#i-cerrar"/></svg></button>
+    <div class="carrusel-titulo"><span id="car-titulo"></span><em id="car-sub"></em></div>
+    <span class="carrusel-cuenta" id="car-cuenta"></span>
+  </div>
+  <div class="carrusel-pista" id="car-pista"></div>
+  <div class="carrusel-abajo">
+    <p class="carrusel-comentario" id="car-comentario" hidden></p>
+    <div class="carrusel-acciones">
+      <button class="car-accion" type="button" id="car-mensaje"><svg><use href="#i-mensaje"/></svg>Mensaje</button>
+      <button class="car-accion" type="button" id="car-guardar"><svg><use href="#i-descargar"/></svg>Guardar</button>
+      <label class="car-accion" for="input-reemplazo" id="car-reemplazar"><svg><use href="#i-cambiar"/></svg>Reemplazar</label>
+      <button class="car-accion" type="button" id="car-borrar"><svg><use href="#i-papelera"/></svg><span>Borrar</span></button>
+    </div>
+  </div>
+</div>
+
 <!-- ===================== HOJAS ===================== -->
 <div class="hoja" id="h-perfil" hidden>
   <div class="hoja-panel" role="dialog" aria-modal="true" aria-labelledby="perfil-nombre">
@@ -178,6 +199,7 @@
     <div class="perfil-cabeza">
       <span class="avatar avatar-grande" id="perfil-avatar"></span>
       <p class="hoja-titulo" id="perfil-nombre"></p>
+      <p class="perfil-modo" id="perfil-modo" hidden>Modo demostración · las fotos quedan solo en este celular</p>
     </div>
     <div class="lista">
       <div class="lista-item lista-item-col">
@@ -258,7 +280,6 @@
 </div>
 
 <div class="toast" id="toast" role="status" aria-live="polite"></div>
-<p class="cinta-demo" id="cinta-demo" hidden>Demostración · las fotos quedan solo en este celular</p>
 
 <script src="js/boda.js"></script>
 <script src="js/api.js" defer></script>

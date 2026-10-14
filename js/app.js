@@ -116,7 +116,7 @@
     $("#tb-fecha").textContent = fechaCorta;
     $("#bv-kicker").textContent = `${pareja()} · ${fechaCorta}`;
     $("#bv-bajada").textContent = `Tenés 24 fotos para la boda. Como en las descartables de antes, las vas a ver recién cuando se revelen.`;
-    $("#cinta-demo").hidden = !!E.url;
+    $("#perfil-modo").hidden = !!E.url;
     E.descartables = $$("[data-descartable]").map((el) => window.Descartable.pintar(el, {
       nombres: pareja(),
       fecha: `${String(f.getDate()).padStart(2, "0")} · ${String(f.getMonth() + 1).padStart(2, "0")} · ${f.getFullYear()}`
@@ -537,7 +537,134 @@
   function tocarCuadro(foto, n) {
     if (foto.error) { reintentar(foto); return; }
     if (foto.subiendo) { abrirMensaje(foto); return; }
-    abrirFoto(foto, n, false);
+    if (E.revelado) {
+      const lista = confirmadas();
+      abrirCarrusel(lista, lista.indexOf(foto), false);
+      return;
+    }
+    abrirFoto(foto, n, false); // negativo: mensaje y, si es la última, borrar
+  }
+
+  /* ---------------------------------------------------------
+     Carrusel: fotos a pantalla completa, se pasan deslizando
+  --------------------------------------------------------- */
+  const C = { lista: [], i: 0, deAlbum: false };
+  const fechaFoto = (iso) => new Date(iso).toLocaleString("es-AR", { day: "numeric", month: "short", hour: "2-digit", minute: "2-digit", hour12: false });
+
+  function abrirCarrusel(lista, indice, deAlbum) {
+    if (!lista.length) return;
+    C.lista = lista.slice();
+    C.i = Math.max(0, indice);
+    C.deAlbum = deAlbum;
+    const pista = $("#car-pista");
+    pista.innerHTML = "";
+    C.lista.forEach((f) => {
+      const slide = document.createElement("div");
+      slide.className = "car-slide";
+      slide.dataset.id = f.id;
+      const img = document.createElement("img");
+      img.alt = deAlbum && f.invitado ? `Foto de ${f.invitado}` : "Tu foto";
+      img.decoding = "async";
+      if (f.completa || f.mini) img.src = f.completa || f.mini;
+      slide.appendChild(img);
+      pista.appendChild(slide);
+    });
+    $("#carrusel").hidden = false;
+    document.body.classList.add("sin-scroll");
+    requestAnimationFrame(() => {
+      pista.scrollLeft = C.i * pista.clientWidth;
+      mostrarActual();
+    });
+  }
+
+  function cerrarCarrusel() {
+    $("#carrusel").hidden = true;
+    document.body.classList.remove("sin-scroll");
+    E.detalle = null;
+  }
+
+  function mostrarActual() {
+    const f = C.lista[C.i];
+    if (!f) return;
+    E.detalle = f;
+    $("#car-titulo").textContent = C.deAlbum ? (f.invitado || "Foto") : `Foto ${E.fotos.indexOf(f) + 1}A`;
+    $("#car-sub").textContent = f.creada ? fechaFoto(f.creada) : "";
+    $("#car-cuenta").textContent = `${C.i + 1} / ${C.lista.length}`;
+    $("#car-comentario").hidden = !f.comentario;
+    $("#car-comentario").textContent = f.comentario ? `“${f.comentario}”` : "";
+    $("#car-mensaje").hidden = C.deAlbum;
+    $("#car-borrar").hidden = C.deAlbum;
+    $("#car-reemplazar").hidden = C.deAlbum;
+    $("#car-reemplazar").classList.toggle("is-disabled", !E.abierta);
+    $("#input-reemplazo").disabled = !E.abierta;
+    desarmarBorrarCarrusel();
+    [C.i, C.i + 1, C.i - 1].forEach(cargarCompleta);
+  }
+
+  // La foto grande se pide cuando se va a ver (y la de al lado, para que pase suave)
+  async function cargarCompleta(k) {
+    const f = C.lista[k];
+    if (!f || f.completa || f.cargando) return;
+    f.cargando = true;
+    try {
+      const r = await E.api.llamar("foto", { token: E.token, idFoto: f.id }, 2);
+      f.completa = "data:image/jpeg;base64," + r.datos;
+      const img = document.querySelector(`.car-slide[data-id="${f.id}"] img`);
+      if (img) img.src = f.completa;
+    } catch (e) { sesionCaida(e); }
+    finally { f.cargando = false; }
+  }
+
+  let carruselTimer;
+  function alDeslizar() {
+    clearTimeout(carruselTimer);
+    carruselTimer = setTimeout(() => {
+      const pista = $("#car-pista");
+      const i = Math.round(pista.scrollLeft / pista.clientWidth);
+      if (i !== C.i && C.lista[i]) { C.i = i; mostrarActual(); }
+    }, 60);
+  }
+  function irA(i) {
+    if (!C.lista[i]) return;
+    const pista = $("#car-pista");
+    pista.scrollTo({ left: i * pista.clientWidth, behavior: "smooth" });
+  }
+
+  let borrarCarruselTimer;
+  function desarmarBorrarCarrusel() {
+    const b = $("#car-borrar");
+    b.classList.remove("is-confirmando");
+    b.querySelector("span").textContent = "Borrar";
+    clearTimeout(borrarCarruselTimer);
+  }
+  async function borrarDesdeCarrusel() {
+    const b = $("#car-borrar");
+    const f = C.lista[C.i];
+    if (!f) return;
+    if (!b.classList.contains("is-confirmando")) {
+      b.classList.add("is-confirmando");
+      b.querySelector("span").textContent = "¿Seguro?";
+      borrarCarruselTimer = setTimeout(desarmarBorrarCarrusel, 4000);
+      return;
+    }
+    desarmarBorrarCarrusel();
+    try {
+      const r = await E.api.llamar("borrar", { token: E.token, idFoto: f.id }, REINTENTOS);
+      E.fotos = E.fotos.filter((x) => x !== f);
+      E.usadas = r.usadas;
+      E.album.cargado = false;
+      C.lista.splice(C.i, 1);
+      const slide = document.querySelector(`.car-slide[data-id="${f.id}"]`);
+      if (slide) slide.remove();
+      render();
+      aviso("Borrada. Recuperaste un lugar en tu rollo.");
+      if (!C.lista.length) { cerrarCarrusel(); return; }
+      C.i = Math.min(C.i, C.lista.length - 1);
+      $("#car-pista").scrollLeft = C.i * $("#car-pista").clientWidth;
+      mostrarActual();
+    } catch (e) {
+      if (!sesionCaida(e)) aviso(e.message, true);
+    }
   }
 
   async function abrirFoto(foto, n, deAlbum) {
@@ -687,7 +814,7 @@
       autor.className = "album-item-autor";
       autor.textContent = x.invitado || "";
       b.appendChild(autor);
-      b.addEventListener("click", () => abrirFoto(x, 0, true));
+      b.addEventListener("click", () => abrirCarrusel(lista, lista.indexOf(x), true));
       grid.appendChild(b);
       if (!x.mini) observadorAlbum.observe(b);
     });
@@ -778,7 +905,7 @@
       input.value = "";
       if (!archivo) return;
       const id = reemplazo && E.detalle ? E.detalle.id : null;
-      if (reemplazo) cerrarHojas();
+      if (reemplazo) { cerrarHojas(); cerrarCarrusel(); }
       const foto = await encolar(archivo, id);
       if (foto && !reemplazo) {
         Sonidos.avanzar();
@@ -802,8 +929,22 @@
 
     $("#mensaje-guardar").addEventListener("click", async () => {
       const foto = E.detalle;
-      if (foto && await guardarMensaje(foto, $("#mensaje-texto").value)) { cerrarHojas(); aviso("Mensaje guardado."); }
+      if (foto && await guardarMensaje(foto, $("#mensaje-texto").value)) {
+        cerrarHojas();
+        if (!$("#carrusel").hidden) mostrarActual();
+        aviso("Mensaje guardado.");
+      }
     });
+
+    $("#car-cerrar").addEventListener("click", cerrarCarrusel);
+    $("#car-pista").addEventListener("scroll", alDeslizar, { passive: true });
+    $("#car-guardar").addEventListener("click", descargar);
+    $("#car-borrar").addEventListener("click", borrarDesdeCarrusel);
+    $("#car-mensaje").addEventListener("click", () => { const f = C.lista[C.i]; if (f) abrirMensaje(f); });
+
+    // Sin zoom con pellizco en iPhone (Safari ignora user-scalable=no)
+    document.addEventListener("gesturestart", (e) => e.preventDefault());
+    document.addEventListener("touchmove", (e) => { if (e.scale && e.scale !== 1) e.preventDefault(); }, { passive: false });
     $("#foto-comentario").addEventListener("input", () => {
       $("#foto-guardar-comentario").hidden = !E.detalle || $("#foto-comentario").value.trim() === (E.detalle.comentario || "");
     });
@@ -832,8 +973,13 @@
     $$(".hoja").forEach((h) => h.addEventListener("click", (e) => { if (e.target === h) cerrarHojas(); }));
     $$("[data-cerrar]").forEach((b) => b.addEventListener("click", cerrarHojas));
     document.addEventListener("keydown", (e) => {
+      const carrusel = !$("#carrusel").hidden && $("#h-mensaje").hidden;
+      if (carrusel && e.key === "ArrowRight") irA(C.i + 1);
+      if (carrusel && e.key === "ArrowLeft") irA(C.i - 1);
       if (e.key !== "Escape") return;
-      if (!$("#visor").hidden) cerrarCamara(); else cerrarHojas();
+      if (!$("#visor").hidden) cerrarCamara();
+      else if (carrusel) cerrarCarrusel();
+      else cerrarHojas();
     });
 
     window.addEventListener("beforeinstallprompt", (e) => {
