@@ -10,7 +10,7 @@
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="default">
 <meta name="apple-mobile-web-app-title" content="Cámara" id="meta-titulo-app">
-<link rel="manifest" href="manifest.webmanifest">
+<!-- El manifiesto lo agrega js/boda.js (en iPhone no se usa: ver ahí) -->
 <link rel="icon" href="assets/icono-192.png" type="image/png">
 <link rel="apple-touch-icon" href="assets/icono-180.png">
 
@@ -281,7 +281,7 @@
       <li>Abrí la cámara desde el ícono nuevo: ya entra con tu nombre.</li>
     </ol>
     <p class="lista-texto">Así te podemos avisar cuando se revelen las fotos. Después abrí la cámara desde el ícono y activá los avisos.</p>
-    <button class="btn btn-primary btn-block" type="button" data-cerrar>Entendido</button>
+    <button class="btn btn-primary btn-block" type="button" id="instalar-entendido" data-cerrar>Entendido</button>
   </div>
 </div>
 

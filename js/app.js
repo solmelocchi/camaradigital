@@ -97,6 +97,12 @@
   --------------------------------------------------------- */
   async function iniciar() {
     mostrarPantalla("p-cargando");
+    if (window.BODA_PERDIDA) {
+      $("#error-texto").textContent = "Esta app se instaló sin el link de la boda. Borrala de la pantalla de inicio y volvé a instalarla desde el link que te pasaron.";
+      $("#btn-reintentar").hidden = true;
+      mostrarPantalla("p-error");
+      return;
+    }
     try { E.boda = await window.cargarBoda; }
     catch (e) {
       $("#error-texto").textContent = "No encontramos esta cámara. Revisá el link que te pasaron.";
@@ -217,7 +223,7 @@
     const est = estadoAvisos();
     $("#avisos-estado").textContent = TEXTOS_AVISOS[est];
     const tarjeta = $("#tarjeta-avisos");
-    tarjeta.hidden = E.revelado || !(est === "pendiente" || est === "instalar");
+    tarjeta.hidden = E.revelado || !(est === "pendiente" || (est === "instalar" && !E.instruccionesVistas));
     if (est === "instalar") {
       $("#ta-titulo").textContent = "Instalá la app y te avisamos";
       $("#ta-texto").textContent = "En iPhone los avisos llegan a la app instalada.";
@@ -939,8 +945,8 @@
   function cerrarHojas() {
     $$(".hoja").forEach((h) => { h.hidden = true; });
     E.detalle = null;
-    // Si se había agregado el token a la dirección para instalar en iPhone, se quita
-    if (location.hash) history.replaceState(null, "", location.pathname + location.search);
+    // Ojo: si se agregó la sesión a la dirección para instalar en iPhone, queda
+    // ahí hasta que se agregue el ícono (se limpia sola al volver a abrir)
   }
 
   async function copiarEnlace() {
@@ -1058,6 +1064,8 @@
     $("#btn-instalar").addEventListener("click", instalar);
     $("#btn-avisos").addEventListener("click", activarAvisos);
     $("#ta-boton").addEventListener("click", activarAvisos);
+    // Después de ver cómo instalarla, la tarjeta deja de insistir
+    $("#instalar-entendido").addEventListener("click", () => { E.instruccionesVistas = true; renderAvisos(); });
     $("#sw-sonido").checked = Sonidos.activo;
     $("#sw-sonido").addEventListener("change", (e) => { Sonidos.activo = e.target.checked; });
     $("#btn-salir").addEventListener("click", pedirSalir);

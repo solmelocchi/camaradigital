@@ -22,10 +22,19 @@
   // iPhone usa el start_url del manifiesto ("./", sin la boda) al agregar el
   // ícono a la pantalla de inicio. Sin manifiesto guarda la dirección actual
   // (con ?b= y la sesión), así la app instalada abre la cámara correcta.
-  if (/iphone|ipad|ipod/i.test(navigator.userAgent)) {
-    const manifiesto = document.querySelector('link[rel="manifest"]');
-    if (manifiesto) manifiesto.remove();
+  // Por eso el manifiesto se agrega solo fuera de iPhone/iPad.
+  const esIOS = /iphone|ipad|ipod/i.test(navigator.userAgent) ||
+    (/Macintosh/.test(navigator.userAgent) && navigator.maxTouchPoints > 1);
+  if (!esIOS) {
+    const link = document.createElement("link");
+    link.rel = "manifest";
+    link.href = "manifest.webmanifest";
+    document.head.appendChild(link);
   }
+
+  // App instalada que no sabe de qué boda es: mejor avisar que abrir la demo
+  const instalada = matchMedia("(display-mode: standalone)").matches || navigator.standalone === true;
+  window.BODA_PERDIDA = instalada && slug === "demo" && !params.get("b");
   // Dirección pública de la app: el QR de la tarjeta siempre lleva acá,
   // aunque la tarjeta se abra desde un archivo de la compu
   window.URL_PUBLICA = "https://solmelocchi.github.io/camaradigital/";
