@@ -14,7 +14,7 @@ window.BODA = {
 
   // URL /exec del Apps Script de esta boda (ver GUIA.md).
   // Vacía = modo demostración: todo queda en el celular, sirve para mostrarla.
-  webAppUrl: "https://script.google.com/macros/s/AKfycbwAnJi46xp33UZgZjNWYRsyLSuhYTirvPbVa_39F73yfyjyzjIZiYoRDIK6NMrSn2o8NA/exec",
+  webAppUrl: "https://script.google.com/macros/s/AKfycbx7xkAXW1vIy_76E1XrzHdppsH9NT7b_BCm4nghKGgXRoXzhgHM7re_eCy3_XvDirZCRg/exec",
 
   // Colores (los mismos de la invitación)
   colores: {
