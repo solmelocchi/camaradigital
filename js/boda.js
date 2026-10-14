@@ -12,7 +12,10 @@
     try { slug = localStorage.getItem("koba-camara:boda") || ""; } catch (e) { slug = ""; }
   }
   if (!valido(slug)) slug = "demo";
-  try { localStorage.setItem("koba-camara:boda", slug); } catch (e) { /* modo privado */ }
+  // La demo no se recuerda: un link sin ?b= abre la última boda real usada
+  if (slug !== "demo") {
+    try { localStorage.setItem("koba-camara:boda", slug); } catch (e) { /* modo privado */ }
+  }
 
   window.BODA_SLUG = slug;
 
