@@ -97,11 +97,13 @@
         <p class="cam-estado-num"><span id="cam-quedan">24</span> <span class="cam-estado-txt" id="cam-quedan-txt">fotos en tu rollo</span></p>
         <p class="cam-estado-revela" id="cam-revela"></p>
       </div>
-      <button class="obturador-grande" type="button" id="btn-abrir" aria-label="Abrir la cámara">
-        <span class="obturador-anillo"></span>
-        <span class="obturador-texto">Abrir cámara</span>
-      </button>
-      <label class="link" for="input-galeria" id="btn-galeria">o subí una foto de tu galería</label>
+      <div class="cam-acciones">
+        <button class="obturador-grande" type="button" id="btn-abrir" aria-label="Abrir la cámara">
+          <span class="obturador-anillo"></span>
+          <span class="obturador-texto">Abrir cámara</span>
+        </button>
+        <label class="link" for="input-galeria" id="btn-galeria">o subí una foto de tu galería</label>
+      </div>
       <input type="file" id="input-galeria" accept="image/*" class="archivo-oculto">
       <input type="file" id="input-camara-nativa" accept="image/*" capture="environment" class="archivo-oculto">
 
@@ -211,14 +213,9 @@
       <p class="perfil-modo" id="perfil-modo" hidden>Modo demostración · las fotos quedan solo en este celular</p>
     </div>
     <div class="lista">
-      <div class="lista-item lista-item-col">
-        <p class="lista-titulo">Tu enlace personal</p>
-        <p class="lista-texto">Con este enlace volvés a tu cámara desde otro celular. No lo compartas: con él se entra como vos.</p>
-        <div class="fila-2 fila-botones">
-          <a class="btn btn-outline" id="enlace-whatsapp" target="_blank" rel="noopener">WhatsApp</a>
-          <button class="btn btn-ghost" type="button" id="enlace-copiar">Copiar</button>
-        </div>
-      </div>
+      <button class="lista-item" type="button" id="btn-enlace">
+        <svg><use href="#i-compartir"/></svg><span><strong>Guardar mi enlace personal</strong><em>Para volver a entrar desde otro celular</em></span>
+      </button>
       <button class="lista-item" type="button" id="btn-instalar" hidden>
         <svg><use href="#i-mas"/></svg><span><strong>Instalar la app</strong>Tenela en tu pantalla de inicio</span>
       </button>

@@ -57,7 +57,8 @@
     $$(".pantalla").forEach((p) => { p.hidden = p.id !== id; });
     $$(".tab").forEach((t) => t.classList.toggle("is-activa", t.dataset.tab === id));
     if (id === "p-album") abrirAlbum();
-    window.scrollTo(0, 0);
+    const pantalla = document.getElementById(id);
+    if (pantalla) pantalla.scrollTop = 0;
   }
 
   function fechaHumana(iso) {
@@ -173,7 +174,6 @@
     $("#btn-perfil").textContent = iniciales;
     $("#perfil-avatar").textContent = iniciales;
     $("#perfil-nombre").textContent = `${r.invitado.nombre} ${r.invitado.apellido}`;
-    $("#enlace-whatsapp").href = "https://wa.me/?text=" + encodeURIComponent(`Mi enlace personal para la cámara de la boda de ${pareja()}: ${enlacePersonal()}`);
     render();
     renderAvisos();
     if (E.revelado) cargarMiniaturas();
@@ -1046,7 +1046,15 @@
       renderAlbum();
     }));
 
-    $("#enlace-copiar").addEventListener("click", copiarEnlace);
+    $("#btn-enlace").addEventListener("click", async () => {
+      if (navigator.share) {
+        try {
+          await navigator.share({ title: `Mi cámara · ${pareja()}`, text: "Mi enlace personal para la cámara de la boda (no lo compartas):", url: enlacePersonal() });
+          return;
+        } catch (e) { if (e && e.name === "AbortError") return; }
+      }
+      copiarEnlace();
+    });
     $("#btn-instalar").addEventListener("click", instalar);
     $("#btn-avisos").addEventListener("click", activarAvisos);
     $("#ta-boton").addEventListener("click", activarAvisos);

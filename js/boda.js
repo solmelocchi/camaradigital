@@ -15,6 +15,14 @@
   try { localStorage.setItem("koba-camara:boda", slug); } catch (e) { /* modo privado */ }
 
   window.BODA_SLUG = slug;
+
+  // iPhone usa el start_url del manifiesto ("./", sin la boda) al agregar el
+  // ícono a la pantalla de inicio. Sin manifiesto guarda la dirección actual
+  // (con ?b= y la sesión), así la app instalada abre la cámara correcta.
+  if (/iphone|ipad|ipod/i.test(navigator.userAgent)) {
+    const manifiesto = document.querySelector('link[rel="manifest"]');
+    if (manifiesto) manifiesto.remove();
+  }
   // Dirección pública de la app: el QR de la tarjeta siempre lleva acá,
   // aunque la tarjeta se abra desde un archivo de la compu
   window.URL_PUBLICA = "https://solmelocchi.github.io/camaradigital/";
