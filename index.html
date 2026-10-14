@@ -18,8 +18,8 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Bodoni+Moda:ital,opsz,wght@0,6..96,400;0,6..96,500;1,6..96,400;1,6..96,500&family=Jost:wght@300;400;500&display=swap" rel="stylesheet">
 
-<link rel="stylesheet" href="css/base.css?v=7">
-<link rel="stylesheet" href="css/app.css?v=7">
+<link rel="stylesheet" href="css/base.css?v=8">
+<link rel="stylesheet" href="css/app.css?v=8">
 </head>
 <body>
 
@@ -285,17 +285,29 @@
   </div>
 </div>
 
+<!-- Ventanita de confirmación (borrar, salir) -->
+<div class="confirmar" id="confirmar" hidden>
+  <div class="confirmar-caja" role="alertdialog" aria-modal="true" aria-labelledby="confirmar-titulo" aria-describedby="confirmar-texto">
+    <p class="confirmar-titulo" id="confirmar-titulo"></p>
+    <p class="confirmar-texto" id="confirmar-texto"></p>
+    <div class="confirmar-botones">
+      <button type="button" class="confirmar-btn" id="confirmar-no">Cancelar</button>
+      <button type="button" class="confirmar-btn confirmar-si" id="confirmar-si"></button>
+    </div>
+  </div>
+</div>
+
 <div class="toast" id="toast" role="status" aria-live="polite"></div>
 
-<script src="js/boda.js?v=7"></script>
-<script src="js/firebase-config.js?v=7" defer></script>
-<script src="js/avisos.js?v=7" defer></script>
-<script src="js/api.js?v=7" defer></script>
-<script src="js/api-demo.js?v=7" defer></script>
-<script src="js/imagenes.js?v=7" defer></script>
-<script src="js/sonidos.js?v=7" defer></script>
-<script src="js/descartable.js?v=7" defer></script>
-<script src="js/visor.js?v=7" defer></script>
-<script src="js/app.js?v=7" defer></script>
+<script src="js/boda.js?v=8"></script>
+<script src="js/firebase-config.js?v=8" defer></script>
+<script src="js/avisos.js?v=8" defer></script>
+<script src="js/api.js?v=8" defer></script>
+<script src="js/api-demo.js?v=8" defer></script>
+<script src="js/imagenes.js?v=8" defer></script>
+<script src="js/sonidos.js?v=8" defer></script>
+<script src="js/descartable.js?v=8" defer></script>
+<script src="js/visor.js?v=8" defer></script>
+<script src="js/app.js?v=8" defer></script>
 </body>
 </html>

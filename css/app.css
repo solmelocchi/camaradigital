@@ -660,7 +660,7 @@ body {
   left: 20px;
   right: 20px;
   bottom: calc(var(--alto-tabbar) + var(--safe-bottom) + 14px);
-  z-index: 300;
+  z-index: 400;
   width: fit-content;
   max-width: 440px;
   margin: 0 auto;
@@ -770,3 +770,39 @@ body {
 .tarjeta-avisos-titulo { margin: 0; font-size: .9rem; font-weight: 400; line-height: 1.3; }
 .tarjeta-avisos-sub { margin: 2px 0 0; font-size: .76rem; color: var(--color-muted); line-height: 1.35; }
 .btn-chico { min-height: 38px; padding: 0 14px; font-size: .64rem; letter-spacing: .12em; flex: none; }
+
+/* ---------- Ventanita de confirmación ---------- */
+.confirmar {
+  position: fixed;
+  inset: 0;
+  z-index: 350;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 28px;
+  background: rgba(20,16,14,.55);
+  animation: fondo .2s ease;
+}
+.confirmar-caja {
+  width: min(100%, 320px);
+  border-radius: 20px;
+  background: var(--color-bg);
+  text-align: center;
+  overflow: hidden;
+  box-shadow: 0 30px 60px -20px rgba(0,0,0,.4);
+  animation: aparece .28s var(--ease-out);
+}
+@keyframes aparece { from { transform: scale(.92); opacity: 0; } }
+.confirmar-titulo { margin: 24px 22px 6px; font-family: var(--font-display); font-style: italic; font-size: 1.4rem; line-height: 1.2; }
+.confirmar-texto { margin: 0 22px 22px; font-size: .88rem; line-height: 1.5; color: var(--color-muted); }
+.confirmar-botones { display: grid; grid-template-columns: 1fr 1fr; border-top: 1px solid var(--color-line); }
+.confirmar-btn {
+  min-height: 52px;
+  border: none;
+  background: none;
+  font-size: .95rem;
+  color: var(--color-ink);
+}
+.confirmar-btn + .confirmar-btn { border-left: 1px solid var(--color-line); }
+.confirmar-si { font-weight: 500; color: var(--color-primary); }
+.confirmar-si.es-peligro { color: var(--color-error); }

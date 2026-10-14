@@ -391,23 +391,19 @@
     }
   }
 
-  let salirArmado = false;
-  function pedirSalir() {
-    const b = $("#btn-salir");
-    if (!salirArmado) {
-      salirArmado = true;
-      b.textContent = "¿Guardaste tu enlace personal? Tocá de nuevo para salir";
-      setTimeout(() => { salirArmado = false; b.textContent = "Salir de esta cámara"; }, 5000);
-      return;
-    }
-    salir();
+  async function pedirSalir() {
+    const si = await confirmar({
+      titulo: "¿Salir de la cámara?",
+      texto: "Para volver a ver tus fotos vas a necesitar tu enlace personal. Guardalo antes desde tu perfil.",
+      aceptar: "Salir",
+      peligro: true
+    });
+    if (si) salir();
   }
   function salir(mensaje) {
     borrarToken();
     Object.assign(E, { token: null, invitado: null, usadas: 0, fotos: [], cola: [] });
     E.album = { fotos: [], cargado: false, filtro: "todas" };
-    salirArmado = false;
-    $("#btn-salir").textContent = "Salir de esta cámara";
     cerrarHojas();
     $("#form-registro").reset();
     $("#form-registro").hidden = false;
@@ -621,6 +617,39 @@
   }
 
   /* ---------------------------------------------------------
+     Ventanita "¿Estás seguro?": devuelve true si el invitado acepta
+  --------------------------------------------------------- */
+  function confirmar({ titulo, texto, aceptar, peligro }) {
+    return new Promise((ok) => {
+      const caja = $("#confirmar");
+      $("#confirmar-titulo").textContent = titulo;
+      $("#confirmar-texto").textContent = texto || "";
+      const si = $("#confirmar-si");
+      si.textContent = aceptar || "Aceptar";
+      si.classList.toggle("es-peligro", !!peligro);
+      caja.hidden = false;
+      $("#confirmar-no").focus();
+      const cerrar = (valor) => {
+        caja.hidden = true;
+        si.onclick = null;
+        $("#confirmar-no").onclick = null;
+        caja.onclick = null;
+        ok(valor);
+      };
+      si.onclick = () => cerrar(true);
+      $("#confirmar-no").onclick = () => cerrar(false);
+      caja.onclick = (e) => { if (e.target === caja) cerrar(false); };
+    });
+  }
+
+  const PREGUNTA_BORRAR = {
+    titulo: "¿Borrar esta foto?",
+    texto: "Vas a recuperar un lugar en tu rollo. No se puede deshacer.",
+    aceptar: "Borrar",
+    peligro: true
+  };
+
+  /* ---------------------------------------------------------
      Detalle de una foto (rollo propio o álbum)
   --------------------------------------------------------- */
   function tocarCuadro(foto, n) {
@@ -730,13 +759,7 @@
     const b = $("#car-borrar");
     const f = C.lista[C.i];
     if (!f) return;
-    if (!b.classList.contains("is-confirmando")) {
-      b.classList.add("is-confirmando");
-      b.querySelector("span").textContent = "¿Seguro?";
-      borrarCarruselTimer = setTimeout(desarmarBorrarCarrusel, 4000);
-      return;
-    }
-    desarmarBorrarCarrusel();
+    if (!await confirmar(PREGUNTA_BORRAR)) return;
     try {
       const r = await E.api.llamar("borrar", { token: E.token, idFoto: f.id }, REINTENTOS);
       E.fotos = E.fotos.filter((x) => x !== f);
@@ -823,13 +846,7 @@
     const b = $("#foto-borrar");
     const foto = E.detalle;
     if (!foto) return;
-    if (!b.classList.contains("is-confirmando")) {
-      b.classList.add("is-confirmando");
-      b.textContent = "¿Seguro?";
-      borrarTimer = setTimeout(reiniciarBorrar, 4000);
-      return;
-    }
-    clearTimeout(borrarTimer);
+    if (!await confirmar(PREGUNTA_BORRAR)) return;
     b.disabled = true;
     try {
       const r = await E.api.llamar("borrar", { token: E.token, idFoto: foto.id }, REINTENTOS);
@@ -1073,6 +1090,7 @@
     $$(".hoja").forEach((h) => h.addEventListener("click", (e) => { if (e.target === h) cerrarHojas(); }));
     $$("[data-cerrar]").forEach((b) => b.addEventListener("click", cerrarHojas));
     document.addEventListener("keydown", (e) => {
+      if (!$("#confirmar").hidden) { if (e.key === "Escape") $("#confirmar-no").click(); return; }
       const carrusel = !$("#carrusel").hidden && $("#h-mensaje").hidden;
       if (carrusel && e.key === "ArrowRight") irA(C.i + 1);
       if (carrusel && e.key === "ArrowLeft") irA(C.i - 1);
