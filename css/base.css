@@ -1,0 +1,111 @@
+/* ============================================================
+   BASE — colores, tipografías, botones y campos.
+   Los colores se reemplazan con los de cada boda (bodas/<boda>.js).
+   ============================================================ */
+:root {
+  --color-bg: #FAF3EA;
+  --color-ink: #2B2320;
+  --color-primary: #5C6B4F;
+  --color-accent: #B98B4E;
+  --color-blush: #D9A6A0;
+  --color-surface: #FFFFFF;
+
+  --color-line: color-mix(in srgb, var(--color-ink) 13%, transparent);
+  --color-muted: color-mix(in srgb, var(--color-ink) 62%, var(--color-bg));
+  --color-soft: color-mix(in srgb, var(--color-primary) 9%, var(--color-bg));
+  --color-deep: color-mix(in srgb, var(--color-primary) 70%, #000);
+  --color-gold-soft: color-mix(in srgb, var(--color-accent) 45%, transparent);
+  --color-error: #a4453a;
+
+  --font-display: "Bodoni Moda", "Didot", "Times New Roman", serif;
+  --font-body: "Jost", "Futura", system-ui, sans-serif;
+
+  --ease-soft: cubic-bezier(.22,.61,.36,1);
+  --ease-out: cubic-bezier(.16,1,.3,1);
+  --shadow-card: 0 1px 2px rgba(43,35,32,.05), 0 20px 44px -28px rgba(43,35,32,.32);
+  --safe-top: env(safe-area-inset-top, 0px);
+  --safe-bottom: env(safe-area-inset-bottom, 0px);
+}
+
+* { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+html { -webkit-text-size-adjust: 100%; overflow-x: clip; }
+body {
+  margin: 0;
+  background: var(--color-bg);
+  color: var(--color-ink);
+  font-family: var(--font-body);
+  font-weight: 300;
+  font-size: 1rem;
+  line-height: 1.6;
+  -webkit-font-smoothing: antialiased;
+  overflow-x: clip;
+}
+img { max-width: 100%; display: block; }
+a { color: inherit; }
+button { font-family: inherit; color: inherit; cursor: pointer; }
+h1, h2, h3 { font-family: var(--font-display); font-weight: 400; margin: 0; }
+[hidden] { display: none !important; }
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { animation-duration: .001ms !important; transition-duration: .001ms !important; }
+}
+
+/* ---------- Botones ---------- */
+.btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  min-height: 52px;
+  padding: 0 28px;
+  font-size: .76rem;
+  font-weight: 400;
+  letter-spacing: .18em;
+  text-transform: uppercase;
+  border-radius: 100px;
+  border: 1px solid transparent;
+  text-decoration: none;
+  transition: background .3s, color .3s, border-color .3s, transform .3s var(--ease-out), opacity .3s;
+  user-select: none;
+}
+.btn:active { transform: scale(.97); }
+.btn:disabled, .btn.is-disabled { opacity: .45; pointer-events: none; }
+.btn-primary { background: var(--color-primary); color: var(--color-bg); }
+.btn-outline { background: transparent; border-color: var(--color-primary); color: var(--color-primary); }
+.btn-ghost { background: transparent; border-color: var(--color-line); color: var(--color-ink); }
+.btn-danger { background: transparent; border-color: color-mix(in srgb, var(--color-error) 40%, transparent); color: var(--color-error); }
+.btn-danger.is-confirmando { background: var(--color-error); color: #fff; }
+.btn-block { width: 100%; }
+
+/* ---------- Campos ---------- */
+.campo { margin-bottom: 20px; }
+.campo label {
+  display: block;
+  margin-bottom: 6px;
+  font-size: .68rem;
+  font-weight: 400;
+  letter-spacing: .16em;
+  text-transform: uppercase;
+  color: var(--color-muted);
+}
+input, textarea {
+  width: 100%;
+  font-family: inherit;
+  font-size: 1rem;
+  font-weight: 300;
+  padding: 12px 2px;
+  border: none;
+  border-bottom: 1px solid var(--color-line);
+  border-radius: 0;
+  background: transparent;
+  color: var(--color-ink);
+  transition: border-color .3s;
+}
+textarea { resize: none; }
+input:focus, textarea:focus { outline: none; border-bottom-color: var(--color-primary); }
+::placeholder { color: color-mix(in srgb, var(--color-ink) 35%, transparent); }
+
+:focus-visible { outline: 2px solid var(--color-accent); outline-offset: 3px; }
+
+@keyframes entra { from { opacity: 0; transform: translateY(10px); } }
+@keyframes gira { to { transform: rotate(360deg); } }

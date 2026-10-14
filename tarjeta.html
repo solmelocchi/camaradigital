@@ -1,0 +1,168 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Tarjeta con QR</title>
+<meta name="robots" content="noindex">
+<link rel="icon" href="assets/icono-192.png" type="image/png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Bodoni+Moda:ital,opsz,wght@0,6..96,400;0,6..96,500;1,6..96,400&family=Jost:wght@300;400&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="css/base.css">
+<style>
+  /* Tarjeta de mesa A6 apaisada (14,8 × 10,5 cm), lista para imprimir */
+  body { background: #e9e4dc; }
+  body::after { display: none; }
+  .controles { max-width: 640px; margin: 28px auto 18px; padding: 0 20px; text-align: center; }
+  .controles h1 { font-style: italic; font-size: 1.8rem; margin-bottom: 6px; }
+  .controles p { margin: 0 0 16px; color: var(--color-muted); font-size: .9rem; }
+  .controles code { font-size: .78rem; word-break: break-all; }
+
+  .tarjeta {
+    position: relative;
+    width: 148mm;
+    height: 105mm;
+    margin: 0 auto 40px;
+    background: #fffdf9;
+    box-shadow: 0 30px 60px -30px rgba(43,35,32,.45);
+    display: grid;
+    grid-template-columns: 1fr 44mm;
+    align-items: center;
+    gap: 8mm;
+    padding: 10mm 12mm 10mm 14mm;
+    overflow: hidden;
+    color: var(--color-ink);
+  }
+  .tarjeta::before { /* filete dorado */
+    content: "";
+    position: absolute;
+    inset: 4mm;
+    border: .3mm solid color-mix(in srgb, var(--color-accent) 55%, transparent);
+    pointer-events: none;
+  }
+  .rama { position: absolute; width: 46mm; color: var(--color-primary); opacity: .85; }
+  .rama-1 { top: 1mm; left: -6mm; transform: rotate(28deg); }
+  .rama-2 { bottom: 0; right: -8mm; transform: rotate(200deg); }
+  .rama svg { width: 100%; height: auto; overflow: visible; }
+  .rama .tallo { fill: none; stroke: currentColor; stroke-width: .9; }
+  .rama .hoja { fill: currentColor; fill-opacity: .16; stroke: currentColor; stroke-width: .7; }
+
+  .texto { position: relative; text-align: center; }
+  .eyebrow-t { font-size: 6.5pt; letter-spacing: .32em; text-transform: uppercase; color: var(--color-primary); margin: 0 0 3mm; }
+  .nombres { font-family: var(--font-display); font-style: italic; font-size: 25pt; line-height: 1; letter-spacing: -.01em; margin: 0; }
+  .nombres i { font-size: .62em; color: var(--color-accent); vertical-align: .16em; font-style: italic; }
+  .fecha { font-size: 7pt; letter-spacing: .3em; color: var(--color-muted); margin: 3mm 0 5mm; }
+  .titulo-t { font-family: var(--font-display); font-style: italic; font-size: 13pt; margin: 0 0 2mm; color: var(--color-primary); }
+  .bajada { font-size: 8pt; line-height: 1.5; margin: 0 auto; max-width: 62mm; color: color-mix(in srgb, var(--color-ink) 82%, #fff); }
+
+  .qr-caja { position: relative; text-align: center; }
+  .qr { width: 40mm; height: 40mm; display: block; margin: 0 auto; }
+  .qr-pie { margin: 2.5mm 0 0; font-size: 6pt; letter-spacing: .26em; text-transform: uppercase; color: var(--color-muted); }
+
+  @media print {
+    @page { size: 148mm 105mm; margin: 0; }
+    body { background: none; }
+    .controles { display: none; }
+    .tarjeta { margin: 0; box-shadow: none; }
+    * { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+  }
+  @media screen and (max-width: 640px) {
+    .tarjeta { transform: scale(calc((100vw - 24px) / 148mm)); transform-origin: top left; margin-left: 12px; margin-bottom: calc(105mm * ((100vw - 24px) / 148mm) - 105mm + 30px); }
+  }
+</style>
+</head>
+<body>
+
+<div class="controles">
+  <h1>Tarjeta para las mesas</h1>
+  <p>Se imprime en A6 apaisado (14,8 × 10,5 cm). El código lleva a:<br><code id="destino"></code></p>
+  <button class="btn btn-primary" type="button" onclick="window.print()">Imprimir o guardar PDF</button>
+</div>
+
+<article class="tarjeta">
+  <span class="rama rama-1" data-rama></span>
+  <span class="rama rama-2" data-rama></span>
+  <div class="texto">
+    <p class="eyebrow-t">Nuestra boda</p>
+    <h1 class="nombres" id="t-nombres">Emilia <i>&amp;</i> Tomás</h1>
+    <p class="fecha" id="t-fecha"></p>
+    <p class="titulo-t">Nuestra cámara descartable</p>
+    <p class="bajada" id="t-bajada">Escaneá el código, sacá fotos durante la fiesta y compartí con nosotros los momentos que vivas.</p>
+  </div>
+  <div class="qr-caja">
+    <svg class="qr" id="qr" aria-label="Código QR de la cámara"></svg>
+    <p class="qr-pie">Escaneá con tu celular</p>
+  </div>
+</article>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/qrcode-generator/1.4.4/qrcode.min.js"></script>
+<script src="js/boda.js"></script>
+<script>
+(async function () {
+  "use strict";
+  let boda;
+  try { boda = await window.cargarBoda; }
+  catch (e) { document.getElementById("destino").textContent = "No encontramos esta boda. Revisá el ?b= del link."; return; }
+  const p = boda.pareja;
+
+  // Colores de la boda
+  const col = boda.colores || {};
+  const mapa = { fondo: "--color-bg", tinta: "--color-ink", principal: "--color-primary", acento: "--color-accent" };
+  Object.keys(mapa).forEach((k) => { if (col[k]) document.documentElement.style.setProperty(mapa[k], col[k]); });
+
+  // Textos
+  document.getElementById("t-nombres").innerHTML = "";
+  document.getElementById("t-nombres").append(p.nombre1 + " ", Object.assign(document.createElement("i"), { textContent: "&" }), " " + p.nombre2);
+  const d = new Date(boda.fecha);
+  document.getElementById("t-fecha").textContent = `${d.getDate()} · ${String(d.getMonth() + 1).padStart(2, "0")} · ${d.getFullYear()}`;
+  if (boda.textoTarjeta) document.getElementById("t-bajada").textContent = boda.textoTarjeta;
+  document.title = `Tarjeta · ${p.nombre1} & ${p.nombre2}`;
+
+  // El QR lleva a la cámara de esta boda. En el servidor de prueba de la casa,
+  // a su dirección corta (que ya viene conectada).
+  const deLaCasa = /^(10|192\.168|172\.(1[6-9]|2\d|3[01]))\./.test(location.hostname) && location.port === "8790";
+  const destino = deLaCasa ? location.origin + "/" : new URL("./?b=" + window.BODA_SLUG, location.href).href;
+  document.getElementById("destino").textContent = destino;
+
+  // QR con corrección alta (H): deja lugar para el ícono de cámara del centro
+  const qr = qrcode(0, "H");
+  qr.addData(destino);
+  qr.make();
+  const n = qr.getModuleCount();
+  const centro = Math.floor(n * 0.22);
+  const desde = Math.floor((n - centro) / 2);
+  const tinta = getComputedStyle(document.documentElement).getPropertyValue("--color-ink").trim() || "#2B2320";
+  const verde = getComputedStyle(document.documentElement).getPropertyValue("--color-primary").trim() || "#5C6B4F";
+  let puntos = "";
+  for (let f = 0; f < n; f++) {
+    for (let k = 0; k < n; k++) {
+      const enCentro = f >= desde && f < desde + centro && k >= desde && k < desde + centro;
+      if (qr.isDark(f, k) && !enCentro) puntos += `<rect x="${k}" y="${f}" width="1.02" height="1.02" rx=".28"/>`;
+    }
+  }
+  const m = desde + centro / 2;
+  const s = centro / 24; // escala del ícono (viewBox 24)
+  document.getElementById("qr").setAttribute("viewBox", `-2 -2 ${n + 4} ${n + 4}`);
+  document.getElementById("qr").innerHTML = `
+    <rect x="-2" y="-2" width="${n + 4}" height="${n + 4}" fill="#fffdf9"/>
+    <g fill="${tinta}">${puntos}</g>
+    <g transform="translate(${m - 12 * s} ${m - 12 * s}) scale(${s})" fill="none" stroke="${verde}" stroke-width="1.6" stroke-linejoin="round">
+      <path d="M3 8h4l2-3h6l2 3h4v12H3z"/><circle cx="12" cy="13.5" r="3.8"/>
+    </g>`;
+
+  // Ramitas de olivo
+  const tallo = "M2 30 C 50 24, 110 34, 198 22";
+  const hoja = "M0 0C6-6 17-6 24 0C17 6 6 6 0 0Z";
+  const y = (t) => 30 - 8 * Math.sin(Math.PI * t * 0.9);
+  const hojas = Array.from({ length: 8 }, (_, i) => {
+    const t = 0.08 + i * 0.105, x = 2 + t * 196, lado = i % 2 ? 1 : -1;
+    return `<g transform="translate(${x.toFixed(1)} ${y(t).toFixed(1)}) rotate(${lado * (42 - i * 2)}) scale(${(1 - i * .05).toFixed(2)})"><path class="hoja" d="${hoja}"/></g>`;
+  }).join("");
+  document.querySelectorAll("[data-rama]").forEach((el) => {
+    el.innerHTML = `<svg viewBox="0 0 200 60"><path class="tallo" d="${tallo}"/>${hojas}</svg>`;
+  });
+})();
+</script>
+</body>
+</html>

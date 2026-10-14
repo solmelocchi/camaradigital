@@ -1,0 +1,17 @@
+{
+  "name": "Cámara descartable",
+  "short_name": "Cámara",
+  "description": "La cámara descartable de la boda: 24 fotos que se revelan al día siguiente.",
+  "lang": "es",
+  "start_url": "./",
+  "scope": "./",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#FAF3EA",
+  "theme_color": "#FAF3EA",
+  "icons": [
+    { "src": "assets/icono-192.png", "sizes": "192x192", "type": "image/png" },
+    { "src": "assets/icono-512.png", "sizes": "512x512", "type": "image/png" },
+    { "src": "assets/icono-maskable-512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" }
+  ]
+}

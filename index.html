@@ -1,0 +1,272 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<title>Cámara descartable</title>
+<meta name="robots" content="noindex">
+<meta name="theme-color" content="#FAF3EA">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="apple-mobile-web-app-title" content="Cámara" id="meta-titulo-app">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" href="assets/icono-192.png" type="image/png">
+<link rel="apple-touch-icon" href="assets/icono-180.png">
+
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Bodoni+Moda:ital,opsz,wght@0,6..96,400;0,6..96,500;1,6..96,400;1,6..96,500&family=Jost:wght@300;400;500&display=swap" rel="stylesheet">
+
+<link rel="stylesheet" href="css/base.css">
+<link rel="stylesheet" href="css/app.css">
+</head>
+<body>
+
+<!-- Íconos de línea fina que usa toda la app -->
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+  <symbol id="i-camara" viewBox="0 0 24 24"><path d="M3 8h4l2-3h6l2 3h4v12H3z"/><circle cx="12" cy="13.5" r="3.8"/></symbol>
+  <symbol id="i-rollo" viewBox="0 0 24 24"><rect x="3" y="5" width="18" height="14" rx="1.5"/><path d="M3 8.5h18M3 15.5h18M6 5v3.5M9.5 5v3.5M13 5v3.5M16.5 5v3.5M6 15.5V19M9.5 15.5V19M13 15.5V19M16.5 15.5V19"/></symbol>
+  <symbol id="i-album" viewBox="0 0 24 24"><rect x="3" y="3" width="8" height="8" rx="1"/><rect x="13" y="3" width="8" height="8" rx="1"/><rect x="3" y="13" width="8" height="8" rx="1"/><rect x="13" y="13" width="8" height="8" rx="1"/></symbol>
+  <symbol id="i-cerrar" viewBox="0 0 24 24"><path d="M6 6l12 12M18 6L6 18"/></symbol>
+  <symbol id="i-flash" viewBox="0 0 24 24"><path d="M13 2L5 13.5h6L10 22l8-11.5h-6z"/></symbol>
+  <symbol id="i-flash-off" viewBox="0 0 24 24"><path d="M13 2L5 13.5h6L10 22l8-11.5h-6z"/><path d="M3 3l18 18"/></symbol>
+  <symbol id="i-girar" viewBox="0 0 24 24"><path d="M4 12a8 8 0 0 1 13.7-5.6L20 8.7M20 4v4.7h-4.7M20 12a8 8 0 0 1-13.7 5.6L4 15.3M4 20v-4.7h4.7"/></symbol>
+  <symbol id="i-galeria" viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="16" rx="1.5"/><circle cx="8.5" cy="9.5" r="1.8"/><path d="M21 16l-5-5-8 9"/></symbol>
+  <symbol id="i-candado" viewBox="0 0 24 24"><rect x="5" y="10.5" width="14" height="10" rx="1.5"/><path d="M8 10.5V7.5a4 4 0 0 1 8 0v3"/></symbol>
+  <symbol id="i-descargar" viewBox="0 0 24 24"><path d="M12 4v11M7 10.5l5 5 5-5M5 20h14"/></symbol>
+  <symbol id="i-mensaje" viewBox="0 0 24 24"><path d="M4 5h16v11H9l-5 4z"/></symbol>
+  <symbol id="i-campana" viewBox="0 0 24 24"><path d="M6 16V11a6 6 0 0 1 12 0v5l1.5 2h-15z"/><path d="M10 20.5a2 2 0 0 0 4 0"/></symbol>
+  <symbol id="i-compartir" viewBox="0 0 24 24"><path d="M12 15V3M8 7l4-4 4 4"/><path d="M5 11v9h14v-9"/></symbol>
+  <symbol id="i-mas" viewBox="0 0 24 24"><rect x="4" y="4" width="16" height="16" rx="3"/><path d="M12 8.5v7M8.5 12h7"/></symbol>
+</svg>
+
+<div class="app" id="app">
+
+  <!-- Barra superior -->
+  <header class="topbar" id="topbar" hidden>
+    <div class="topbar-titulo">
+      <span class="topbar-nombres" id="tb-nombres"></span>
+      <span class="topbar-fecha" id="tb-fecha"></span>
+    </div>
+    <button class="avatar" id="btn-perfil" type="button" aria-label="Tu perfil"></button>
+  </header>
+
+  <main class="pantallas">
+
+    <!-- Cargando -->
+    <section class="pantalla pantalla-centro" id="p-cargando">
+      <span class="cargando"></span>
+    </section>
+
+    <!-- Error -->
+    <section class="pantalla pantalla-centro" id="p-error" hidden>
+      <p class="mensaje-grande" id="error-texto">No pudimos conectarnos.</p>
+      <button class="btn btn-primary" type="button" id="btn-reintentar">Reintentar</button>
+    </section>
+
+    <!-- Bienvenida y registro -->
+    <section class="pantalla pantalla-bienvenida" id="p-bienvenida" hidden>
+      <p class="kicker" id="bv-kicker"></p>
+      <div class="descartable-lugar" data-descartable></div>
+      <h1 class="titulo-grande">Nuestra cámara<br><em>descartable</em></h1>
+      <p class="bajada" id="bv-bajada"></p>
+      <form class="form-registro" id="form-registro" novalidate>
+        <div class="fila-2">
+          <div class="campo">
+            <label for="reg-nombre">Nombre</label>
+            <input type="text" id="reg-nombre" autocomplete="given-name" maxlength="60" required>
+          </div>
+          <div class="campo">
+            <label for="reg-apellido">Apellido</label>
+            <input type="text" id="reg-apellido" autocomplete="family-name" maxlength="60" required>
+          </div>
+        </div>
+        <button class="btn btn-primary btn-block" type="submit" id="btn-registro">Entrar a la cámara</button>
+        <p class="feedback" id="reg-feedback" role="status" aria-live="polite"></p>
+      </form>
+      <p class="nota" id="bv-cerrada" hidden>La cámara está cerrada por ahora.</p>
+    </section>
+
+    <!-- Pestaña: Cámara -->
+    <section class="pantalla pantalla-camara" id="p-camara" hidden>
+      <div class="descartable-lugar" data-descartable></div>
+      <div class="cam-estado">
+        <p class="cam-estado-num"><span id="cam-quedan">24</span> <span class="cam-estado-txt" id="cam-quedan-txt">fotos en tu rollo</span></p>
+        <p class="cam-estado-revela" id="cam-revela"></p>
+      </div>
+      <button class="obturador-grande" type="button" id="btn-abrir" aria-label="Abrir la cámara">
+        <span class="obturador-anillo"></span>
+        <span class="obturador-texto">Abrir cámara</span>
+      </button>
+      <label class="link" for="input-galeria" id="btn-galeria">o subí una foto de tu galería</label>
+      <input type="file" id="input-galeria" accept="image/*" class="archivo-oculto">
+      <input type="file" id="input-camara-nativa" accept="image/*" capture="environment" class="archivo-oculto">
+    </section>
+
+    <!-- Pestaña: Mi rollo -->
+    <section class="pantalla pantalla-rollo" id="p-rollo" hidden>
+      <div class="rollo-cabecera">
+        <h2>Tu rollo</h2>
+        <p class="rollo-resumen" id="rollo-resumen"></p>
+      </div>
+      <div class="rollo-revelado" id="rollo-revelado"></div>
+      <div class="pelicula">
+        <div class="pelicula-cuadros" id="rollo-grid"></div>
+        <p class="pelicula-vacia" id="rollo-vacio">Todavía no sacaste fotos.<br>La primera es la más difícil.</p>
+      </div>
+    </section>
+
+    <!-- Pestaña: Álbum -->
+    <section class="pantalla pantalla-album" id="p-album" hidden>
+      <div class="rollo-cabecera">
+        <h2>Álbum</h2>
+        <p class="rollo-resumen" id="album-resumen"></p>
+      </div>
+      <div class="album-bloqueado" id="album-bloqueado">
+        <span class="album-candado"><svg><use href="#i-candado"/></svg></span>
+        <p class="mensaje-grande" id="album-bloqueado-titulo">El álbum es privado</p>
+        <p class="nota" id="album-bloqueado-texto"></p>
+      </div>
+      <div id="album-abierto" hidden>
+        <div class="chips" role="tablist">
+          <button class="chip is-activo" type="button" data-filtro="todas" role="tab" aria-selected="true">Todas</button>
+          <button class="chip" type="button" data-filtro="mias" role="tab" aria-selected="false">Mis fotos</button>
+        </div>
+        <div class="album-grid" id="album-grid"></div>
+        <p class="nota" id="album-vacio" hidden>Todavía no hay fotos en el álbum.</p>
+      </div>
+    </section>
+  </main>
+
+  <!-- Pestañas -->
+  <nav class="tabbar" id="tabbar" hidden>
+    <button class="tab is-activa" type="button" data-tab="p-camara"><svg><use href="#i-camara"/></svg><span>Cámara</span></button>
+    <button class="tab" type="button" data-tab="p-rollo"><svg><use href="#i-rollo"/></svg><span>Mi rollo</span><em class="tab-badge" id="tab-badge" hidden></em></button>
+    <button class="tab" type="button" data-tab="p-album"><svg><use href="#i-album"/></svg><span>Álbum</span></button>
+  </nav>
+</div>
+
+<!-- ===================== VISOR (cámara abierta) ===================== -->
+<div class="visor" id="visor" hidden>
+  <div class="visor-arriba">
+    <button class="visor-btn" type="button" id="visor-cerrar" aria-label="Cerrar la cámara"><svg><use href="#i-cerrar"/></svg></button>
+    <div class="contador" aria-live="polite" aria-label="Fotos que quedan">
+      <span class="contador-ventana"><span class="contador-num" id="visor-num">24</span></span>
+    </div>
+    <button class="visor-btn" type="button" id="visor-flash" aria-label="Flash" aria-pressed="false"><svg><use href="#i-flash-off"/></svg></button>
+  </div>
+  <div class="visor-marco" id="visor-marco">
+    <video id="visor-video" playsinline muted autoplay></video>
+    <span class="visor-esquinas" aria-hidden="true"></span>
+    <span class="visor-destello" id="visor-destello" aria-hidden="true"></span>
+    <p class="visor-aviso" id="visor-aviso" hidden></p>
+  </div>
+  <div class="visor-abajo">
+    <label class="visor-btn" for="input-galeria-visor" aria-label="Subir de la galería"><svg><use href="#i-galeria"/></svg></label>
+    <input type="file" id="input-galeria-visor" accept="image/*" class="archivo-oculto">
+    <button class="disparador" type="button" id="visor-disparar" aria-label="Sacar foto"><span></span></button>
+    <button class="visor-btn" type="button" id="visor-girar" aria-label="Cambiar de cámara"><svg><use href="#i-girar"/></svg></button>
+  </div>
+  <button class="visor-chip" type="button" id="visor-chip" hidden><svg><use href="#i-mensaje"/></svg><span id="visor-chip-texto"></span></button>
+</div>
+
+<!-- ===================== HOJAS ===================== -->
+<div class="hoja" id="h-perfil" hidden>
+  <div class="hoja-panel" role="dialog" aria-modal="true" aria-labelledby="perfil-nombre">
+    <span class="hoja-asa"></span>
+    <div class="perfil-cabeza">
+      <span class="avatar avatar-grande" id="perfil-avatar"></span>
+      <p class="hoja-titulo" id="perfil-nombre"></p>
+    </div>
+    <div class="lista">
+      <div class="lista-item lista-item-col">
+        <p class="lista-titulo">Tu enlace personal</p>
+        <p class="lista-texto">Con este enlace volvés a tu cámara desde otro celular. No lo compartas: con él se entra como vos.</p>
+        <div class="fila-2 fila-botones">
+          <a class="btn btn-outline" id="enlace-whatsapp" target="_blank" rel="noopener">WhatsApp</a>
+          <button class="btn btn-ghost" type="button" id="enlace-copiar">Copiar</button>
+        </div>
+      </div>
+      <button class="lista-item" type="button" id="btn-instalar" hidden>
+        <svg><use href="#i-mas"/></svg><span><strong>Instalar la app</strong>Tenela en tu pantalla de inicio</span>
+      </button>
+      <button class="lista-item" type="button" id="btn-avisos">
+        <svg><use href="#i-campana"/></svg><span><strong>Avisos</strong><em id="avisos-estado">Te avisamos cuando se revelen</em></span>
+      </button>
+      <label class="lista-item" for="sw-sonido">
+        <svg><use href="#i-camara"/></svg><span><strong>Sonido de la cámara</strong></span>
+        <input type="checkbox" class="interruptor" id="sw-sonido" checked>
+      </label>
+    </div>
+    <button class="link link-chico" type="button" id="btn-salir">Salir de esta cámara</button>
+  </div>
+</div>
+
+<div class="hoja" id="h-mensaje" hidden>
+  <div class="hoja-panel" role="dialog" aria-modal="true" aria-labelledby="mensaje-titulo">
+    <span class="hoja-asa"></span>
+    <p class="hoja-titulo" id="mensaje-titulo">Un mensaje para los novios</p>
+    <p class="lista-texto" id="mensaje-sub"></p>
+    <div class="campo">
+      <label for="mensaje-texto">Mensaje (opcional)</label>
+      <textarea id="mensaje-texto" maxlength="280" rows="3" placeholder="Unas palabras que acompañen la foto"></textarea>
+    </div>
+    <button class="btn btn-primary btn-block" type="button" id="mensaje-guardar">Guardar mensaje</button>
+  </div>
+</div>
+
+<div class="hoja" id="h-foto" hidden>
+  <div class="hoja-panel hoja-foto" role="dialog" aria-modal="true" aria-labelledby="foto-titulo">
+    <span class="hoja-asa"></span>
+    <div class="hoja-cabeza">
+      <p class="hoja-titulo" id="foto-titulo"></p>
+      <button class="icono-btn" type="button" data-cerrar aria-label="Cerrar"><svg><use href="#i-cerrar"/></svg></button>
+    </div>
+    <figure class="foto-grande" id="foto-figura">
+      <img id="foto-img" alt="">
+      <div class="negativo-grande" id="foto-negativo" hidden><span id="foto-negativo-num"></span><em>En revelado</em></div>
+    </figure>
+    <p class="foto-autor" id="foto-autor" hidden></p>
+    <p class="foto-comentario" id="foto-comentario-ver" hidden></p>
+    <div class="campo" id="foto-campo-comentario">
+      <label for="foto-comentario">Mensaje</label>
+      <textarea id="foto-comentario" maxlength="280" rows="2" placeholder="Opcional"></textarea>
+    </div>
+    <button class="link link-chico" type="button" id="foto-guardar-comentario" hidden>Guardar mensaje</button>
+    <div class="fila-botones-3" id="foto-acciones">
+      <button class="btn btn-ghost" type="button" id="foto-descargar"><svg class="btn-icono"><use href="#i-descargar"/></svg>Guardar</button>
+      <label class="btn btn-outline" for="input-reemplazo" id="foto-reemplazar">Reemplazar</label>
+      <input type="file" id="input-reemplazo" accept="image/*" class="archivo-oculto">
+      <button class="btn btn-danger" type="button" id="foto-borrar">Borrar</button>
+    </div>
+  </div>
+</div>
+
+<div class="hoja" id="h-instalar" hidden>
+  <div class="hoja-panel" role="dialog" aria-modal="true" aria-labelledby="instalar-titulo">
+    <span class="hoja-asa"></span>
+    <p class="hoja-titulo" id="instalar-titulo">Tené la cámara a mano</p>
+    <ol class="pasos">
+      <li>Tocá <svg class="paso-icono"><use href="#i-compartir"/></svg> <strong>Compartir</strong> abajo en Safari.</li>
+      <li>Elegí <svg class="paso-icono"><use href="#i-mas"/></svg> <strong>Agregar a inicio</strong>.</li>
+      <li>Abrí la cámara desde el ícono nuevo: ya entra con tu nombre.</li>
+    </ol>
+    <p class="lista-texto">Así te podemos avisar cuando se revelen las fotos.</p>
+    <button class="btn btn-primary btn-block" type="button" data-cerrar>Entendido</button>
+  </div>
+</div>
+
+<div class="toast" id="toast" role="status" aria-live="polite"></div>
+<p class="cinta-demo" id="cinta-demo" hidden>Demostración · las fotos quedan solo en este celular</p>
+
+<script src="js/boda.js"></script>
+<script src="js/api.js" defer></script>
+<script src="js/api-demo.js" defer></script>
+<script src="js/imagenes.js" defer></script>
+<script src="js/sonidos.js" defer></script>
+<script src="js/descartable.js" defer></script>
+<script src="js/visor.js" defer></script>
+<script src="js/app.js" defer></script>
+</body>
+</html>
