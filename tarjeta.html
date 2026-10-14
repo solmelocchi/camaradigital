@@ -122,8 +122,12 @@
   // El QR lleva a la cámara de esta boda. En el servidor de prueba de la casa,
   // a su dirección corta (que ya viene conectada).
   const deLaCasa = /^(10|192\.168|172\.(1[6-9]|2\d|3[01]))\./.test(location.hostname) && location.port === "8790";
-  const destino = deLaCasa ? location.origin + "/" : new URL("./?b=" + window.BODA_SLUG, location.href).href;
+  const destino = deLaCasa ? location.origin + "/" : window.URL_PUBLICA + "?b=" + window.BODA_SLUG;
   document.getElementById("destino").textContent = destino;
+  if (window.BODA_SLUG === "demo") {
+    document.getElementById("destino").insertAdjacentHTML("afterend",
+      '<br><strong style="color:var(--color-error)">Ojo: esta es la tarjeta de la demostración. Para una boda, abrí tarjeta.html?b=nombre-de-la-boda</strong>');
+  }
 
   // QR con corrección alta (H): deja lugar para el ícono de cámara del centro
   const qr = qrcode(0, "H");

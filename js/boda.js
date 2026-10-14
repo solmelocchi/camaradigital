@@ -15,6 +15,9 @@
   try { localStorage.setItem("koba-camara:boda", slug); } catch (e) { /* modo privado */ }
 
   window.BODA_SLUG = slug;
+  // Dirección pública de la app: el QR de la tarjeta siempre lleva acá,
+  // aunque la tarjeta se abra desde un archivo de la compu
+  window.URL_PUBLICA = "https://solmelocchi.github.io/camaradigital/";
   window.cargarBoda = new Promise((ok, mal) => {
     const s = document.createElement("script");
     s.src = "bodas/" + slug + ".js";
