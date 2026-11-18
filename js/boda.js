@@ -38,10 +38,29 @@
   // Dirección pública de la app: el QR de la tarjeta siempre lleva acá,
   // aunque la tarjeta se abra desde un archivo de la compu
   window.URL_PUBLICA = "https://solmelocchi.github.io/camaradigital/";
+  // Tipografías de la boda (opcional): { titulos, textos, google, cursiva }
+  function aplicarFuentes(f) {
+    if (!f) return;
+    if (f.google) {
+      const link = document.createElement("link");
+      link.rel = "stylesheet";
+      link.href = "https://fonts.googleapis.com/css2?" + f.google + "&display=swap";
+      document.head.appendChild(link);
+    }
+    const root = document.documentElement;
+    if (f.titulos) root.style.setProperty("--font-display", `"${f.titulos}", Georgia, serif`);
+    if (f.textos) root.style.setProperty("--font-body", `"${f.textos}", system-ui, sans-serif`);
+    if (f.cursiva === false) root.classList.add("sin-cursiva");
+  }
+
   window.cargarBoda = new Promise((ok, mal) => {
     const s = document.createElement("script");
     s.src = "bodas/" + slug + ".js";
-    s.onload = () => (window.BODA ? ok(window.BODA) : mal(new Error("boda")));
+    s.onload = () => {
+      if (!window.BODA) return mal(new Error("boda"));
+      aplicarFuentes(window.BODA.fuentes);
+      ok(window.BODA);
+    };
     s.onerror = () => mal(new Error("boda"));
     document.head.appendChild(s);
   });

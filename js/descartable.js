@@ -104,6 +104,16 @@
     el.innerHTML = svgCamara(id, opciones.nombres || "Nuestra boda", opciones.fecha || "");
     const num = el.querySelector(".d-num");
 
+    // Los nombres tienen que entrar antes del objetivo (unos 158 px del dibujo)
+    const nombresTxt = el.querySelector(".d-nombres");
+    const ajustar = () => {
+      nombresTxt.style.fontSize = "";
+      const ancho = nombresTxt.getComputedTextLength();
+      if (ancho > 158) nombresTxt.style.fontSize = (23 * 158 / ancho).toFixed(1) + "px";
+    };
+    requestAnimationFrame(ajustar);
+    if (document.fonts && document.fonts.ready) document.fonts.ready.then(ajustar);
+
     return {
       el,
       numero(n, animar) {

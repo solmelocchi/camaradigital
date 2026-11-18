@@ -125,7 +125,7 @@
     $("#bv-bajada").textContent = `Tenés 24 fotos para la boda. Como en las descartables de antes, las vas a ver recién cuando se revelen.`;
     $("#perfil-modo").hidden = !!E.url;
     E.descartables = $$("[data-descartable]").map((el) => window.Descartable.pintar(el, {
-      nombres: pareja(),
+      nombres: E.boda.pareja.etiqueta || pareja(),
       fecha: `${String(f.getDate()).padStart(2, "0")} · ${String(f.getMonth() + 1).padStart(2, "0")} · ${f.getFullYear()}`
     }));
 

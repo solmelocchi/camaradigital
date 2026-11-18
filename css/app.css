@@ -806,3 +806,9 @@ body {
 .confirmar-btn + .confirmar-btn { border-left: 1px solid var(--color-line); }
 .confirmar-si { font-weight: 500; color: var(--color-primary); }
 .confirmar-si.es-peligro { color: var(--color-error); }
+
+/* Tipografías de títulos sin cursiva (bodas/<boda>.js → fuentes.cursiva = false) */
+.sin-cursiva h1, .sin-cursiva h2, .sin-cursiva em, .sin-cursiva .topbar-nombres,
+.sin-cursiva .d-nombres, .sin-cursiva .mensaje-grande, .sin-cursiva .hoja-titulo,
+.sin-cursiva .revelado-titulo, .sin-cursiva .confirmar-titulo, .sin-cursiva .carrusel-titulo span,
+.sin-cursiva .carrusel-comentario, .sin-cursiva .foto-comentario, .sin-cursiva .pelicula-vacia { font-style: normal; }
