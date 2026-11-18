@@ -111,7 +111,7 @@ body {
 
 /* ---------- Bienvenida ---------- */
 .pantalla-bienvenida { padding-top: calc(var(--safe-top) + 34px); text-align: center; }
-.pantalla-bienvenida .descartable-lugar { margin: 14px auto 26px; }
+.pantalla-bienvenida .descartable-lugar { margin: 26px auto 30px; }
 .titulo-grande { font-size: clamp(2.2rem, 10vw, 2.8rem); line-height: 1.04; letter-spacing: -.02em; }
 .titulo-grande em { color: var(--color-primary); }
 .bajada { margin: 12px auto 26px; max-width: 32ch; color: var(--color-muted); font-size: .95rem; }

@@ -122,7 +122,6 @@
     $("#tb-nombres").textContent = pareja();
     $("#tb-fecha").textContent = fechaCorta;
     $("#bv-kicker").textContent = `${pareja()} · ${fechaCorta}`;
-    $("#bv-bajada").textContent = `Tenés 24 fotos para la boda. Como en las descartables de antes, las vas a ver recién cuando se revelen.`;
     $("#perfil-modo").hidden = !!E.url;
     E.descartables = $$("[data-descartable]").map((el) => window.Descartable.pintar(el, {
       nombres: E.boda.pareja.etiqueta || pareja(),

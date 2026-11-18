@@ -29,6 +29,9 @@ window.BODA = {
     cursiva: false
   },
 
+  // Íconos marrones de la pestaña y de la pantalla de inicio
+  iconos: "assets/bodas/agusypancu/",
+
   demo: { revelarEnMinutos: 3 },
 
   textoTarjeta: "Escaneá el código, sacá fotos durante la fiesta y compartí con nosotros los momentos que vivas."

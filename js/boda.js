@@ -53,12 +53,25 @@
     if (f.cursiva === false) root.classList.add("sin-cursiva");
   }
 
+  // Íconos con los colores de la boda (pestaña y pantalla de inicio del iPhone)
+  function aplicarIconos(carpeta) {
+    if (!carpeta) return;
+    const poner = (rel, archivo) => {
+      let l = document.querySelector(`link[rel="${rel}"]`);
+      if (!l) { l = document.createElement("link"); l.rel = rel; document.head.appendChild(l); }
+      l.href = carpeta + archivo;
+    };
+    poner("icon", "icono-192.png");
+    poner("apple-touch-icon", "icono-180.png");
+  }
+
   window.cargarBoda = new Promise((ok, mal) => {
     const s = document.createElement("script");
     s.src = "bodas/" + slug + ".js";
     s.onload = () => {
       if (!window.BODA) return mal(new Error("boda"));
       aplicarFuentes(window.BODA.fuentes);
+      aplicarIconos(window.BODA.iconos);
       ok(window.BODA);
     };
     s.onerror = () => mal(new Error("boda"));
